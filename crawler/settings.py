@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Scrapy settings for dst project
-#
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     http://doc.scrapy.org/en/latest/topics/settings.html
-#     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-#     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
+# Filename: settings.py
+# Author: hackrflov
+# Date: 2017-08-11
 
-BOT_NAME = 'dst'
+BOT_NAME = 'bilibili'
 
-SPIDER_MODULES = ['dst.spiders']
-NEWSPIDER_MODULE = 'dst.spiders'
+SPIDER_MODULES = ['crawler.spiders']
+NEWSPIDER_MODULE = 'crawler.spiders'
 
 LOG_LEVEL = 'INFO'
 
@@ -21,9 +16,6 @@ DOWNLOAD_TIMEOUT = 5
 
 # Disable cookies to avoid banned
 COOKIES_ENABLED = False
-
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'dst (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -36,11 +28,11 @@ RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
 
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': 90,
-    'dst.middlewares.RandomProxyMiddleware': 100,
+    'crawler.middlewares.RandomProxyMiddleware': 100,
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
 
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
-    'dst.middlewares.RandomUserAgentMiddleware': 543
+    'crawler.middlewares.RandomUserAgentMiddleware': 543
 }
 
 # Proxy list containing entries like
@@ -48,7 +40,7 @@ DOWNLOADER_MIDDLEWARES = {
 # http://username:password@host2:port
 # http://host3:port
 # ...
-PROXY_LIST = 'proxy_list.txt'
+PROXY_LIST = 'proxy/proxy_list.txt'
 
 ##### End Proxy Configuration ######
 
@@ -78,7 +70,7 @@ PROXY_LIST = 'proxy_list.txt'
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    'dst.middlewares.DstSpiderMiddleware': 543,
+#    'crawler.middlewares.DstSpiderMiddleware': 543,
 #}
 
 # Enable or disable downloader middlewares
@@ -94,7 +86,7 @@ PROXY_LIST = 'proxy_list.txt'
 
 # Configure item pipelines
 ITEM_PIPELINES = {
-    'dst.pipelines.BilibiliPipeline': 300,
+    'crawler.pipelines.BilibiliPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

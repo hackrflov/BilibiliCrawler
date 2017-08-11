@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Define here the models for your spider middleware
-#
-# See documentation in:
-# http://doc.scrapy.org/en/latest/topics/spider-middleware.html
+# Filename: middlewares.py
+# Author: hackrflov
+# Date: 2017-08-11
 
 import re
 import random

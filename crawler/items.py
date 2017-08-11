@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Define here the models for your scraped items
-#
-# See documentation in:
-# http://doc.scrapy.org/en/latest/topics/items.html
+# Filename: items.py
+# Author: hackrflov
+# Date: 2017-08-11
 
 import scrapy
 
-class DstItem(scrapy.Item):
+class BilibiliItem(scrapy.Item):
     def fill(self, data):
         for key, value in data.iteritems():
             if key in self.fields:
@@ -18,7 +17,7 @@ class DstItem(scrapy.Item):
 数据源1: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
 数据源2: http://api.bilibili.com/cardrich?mid={MID}&type={TYPE}
 """
-class UserItem(DstItem):
+class UserItem(BilibiliItem):
 
     mid = scrapy.Field()  # ID
     name = scrapy.Field()  # 昵称
@@ -46,7 +45,7 @@ class UserItem(DstItem):
 数据源1: http://m.bilibili.com/video/av{AID}.html
 数据源2: https://api.bilibili.com/x/web-interface/archive/stat?aid={AID}
 """
-class VideoItem(DstItem):
+class VideoItem(BilibiliItem):
 
     aid = scrapy.Field()  # AV号
     pubdate = scrapy.Field()  # 日期
@@ -77,7 +76,7 @@ class VideoItem(DstItem):
 弹幕数据
 数据源: https://comment.bilibili.com/{CID}.xml
 """
-class DanmakuItem(DstItem):
+class DanmakuItem(BilibiliItem):
 
     cid = scrapy.Field()  # 视频ID
     playTime = scrapy.Field()  # 时间

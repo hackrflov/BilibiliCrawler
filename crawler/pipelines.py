@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+# Filename: pipelines.py
+# Author: hackrflov
+# Date: 2017-08-11
+
 import logging
 log = logging.getLogger('scrapy.pipeline')
 
 from pymongo import MongoClient
-from dst.items import UserItem, VideoItem, DanmakuItem
+from crawler.items import UserItem, VideoItem, DanmakuItem
 
 
 class DstPipeline(object):

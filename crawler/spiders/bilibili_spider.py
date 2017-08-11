@@ -1,4 +1,9 @@
 # -*- encoding: utf-8 -*-
+
+# Filename: bilibili_spider.py
+# Author: hackrflov
+# Date: 2017-08-11
+
 import re
 import json
 import pdb
@@ -7,7 +12,7 @@ import scrapy
 from scrapy import selector
 import requests
 import pymongo
-from dst.items import UserItem, VideoItem, DanmakuItem
+from crawler.items import UserItem, VideoItem, DanmakuItem
 
 class BilibiliSpider(scrapy.Spider):
     name = 'bilibili'
@@ -79,17 +84,22 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_fav(self, response):
         data = json.loads(response.body)['data']['archives']
+        mid = response.meta['mid']
         favs = [f['aid'] for f in data]
         user = UserItem()
         user.fill({'mid':response.meta['mid'], 'favs': favs})
         yield user
 
     def parse_user_subscribe(self, response):
-        data = json.loads(response.body)['data']
+        raw = json.loads(response.body)
+        if 'status' in raw and raw['status'] == False:
+            return
+        data = raw['data']
+        mid = response.meta['mid']
         max_page = data['pages']
-        subs = [f['sid'] for f in data['result']]
+        subs = [f['season_id'] for f in data['result']]
         user = UserItem()
-        user.fill({'mid':response.meta['mid'], 'subscribe': subs})
+        user.fill({'mid': mid, 'subscribe': subs})
         yield user
 
         # next page
@@ -102,7 +112,7 @@ class BilibiliSpider(scrapy.Spider):
 
         pn = pn + 1
         url = 'https://space.bilibili.com/ajax/Bangumi/getList?mid={mid}&pages={pn}'.format(mid=mid,pn=pn)
-        request = scrapy.Request(url=url, callback=self.parse_user_fav_seed)
+        request = scrapy.Request(url=url, callback=self.parse_user_subscribe)  # call itself repeatly
         request.meta['mid'] = mid
         request.meta['pn'] = pn
         yield request
