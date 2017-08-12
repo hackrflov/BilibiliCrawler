@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Filename: items.py
-# Author: hackrflov
-# Date: 2017-08-11
+'''
+    File name: items.py
+    Author: hackrflov
+    Date created: 8/11/2017
+    Python version: 2.7
+'''
 
 import scrapy
 

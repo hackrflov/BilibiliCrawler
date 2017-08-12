@@ -1,8 +1,11 @@
 # -*- encoding: utf-8 -*-
 
-# Filename: bilibili_spider.py
-# Author: hackrflov
-# Date: 2017-08-11
+'''
+    File name: bilibili_spider.py
+    Author: hackrflov
+    Date created: 8/11/2017
+    Python version: 2.7
+'''
 
 import re
 import json
@@ -40,7 +43,7 @@ class BilibiliSpider(scrapy.Spider):
             url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
             request = scrapy.Request(url=url, callback=self.parse_video_seed)
             request.meta['aid'] = aid
-            #yield request
+            yield request
 
     def parse_user_seed(self, response):
         print response.meta
