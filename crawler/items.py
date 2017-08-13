@@ -92,4 +92,21 @@ class DanmakuItem(BilibiliItem):
     uid = scrapy.Field()  # 弹幕ID
     msg = scrapy.Field()  # 文本
 
+"""
+番剧数据
+数据源: http://bangumi.bilibili.com/jsonp/seasoninfo/{sid}.ver?
+"""
+class BangumiItem(BilibiliItem):
+
+    sid = scrapy.Field()  # 番剧ID
+    bangumi_id =  scrapy.Field()  # 系列ID
+    title = scrapy.Field()  # 标题
+    total_count = scrapy.Field()  # 共几话
+    area = scrapy.Field()  # 国家
+    tags = scrapy.Field()  # 标签
+    brief = scrapy.Field()  # 简介
+    pub_time = scrapy.Field()  # 开播时间
+    play_count = scrapy.Field()  # 播放数
+    favorites = scrapy.Field()  # 追番数
+    danmaku_count = scrapy.Field()  # 弹幕数
 

@@ -11,7 +11,7 @@ import logging
 log = logging.getLogger('scrapy.pipeline')
 
 from pymongo import MongoClient
-from crawler.items import UserItem, VideoItem, DanmakuItem
+from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
 
 
 class DstPipeline(object):
@@ -33,6 +33,9 @@ class BilibiliPipeline(object):
         elif item_type == DanmakuItem:
             clt_name = 'danmaku'
             key = 'uid'
+        elif item_type == BangumiItem:
+            clt_name = 'bangumi'
+            key = 'sid'
         clt = db[clt_name]
         if len(item) > 2:
             self.upsert(item, clt, key)

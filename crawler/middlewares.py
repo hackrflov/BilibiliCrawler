@@ -76,7 +76,7 @@ class RandomProxyMiddleware(object):
             request.headers['Proxy-Authorization'] = basic_auth
         else:
             log.debug('Proxy user pass not found')
-        log.info('Using proxy <%s>, %d proxies left' % (
+        log.debug('Using proxy <%s>, %d proxies left' % (
                 proxy_address, len(self.proxies)))
 
     def process_exception(self, request, exception, spider):
@@ -88,7 +88,7 @@ class RandomProxyMiddleware(object):
         except KeyError:
             pass
         request.meta["exception"] = True
-        log.info('Removing failed proxy <%s>, %d proxies left' % (
+        log.warning('Removing failed proxy <%s>, %d proxies left' % (
                 proxy, len(self.proxies)))
 
         if len(self.proxies) <= 10:

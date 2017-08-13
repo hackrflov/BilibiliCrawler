@@ -73,5 +73,10 @@ appkey_list = [
 形式:http://interface.bilibili.tv/playurl?platform=android&cid=’从view接口取得的cid‘&appkey=’你的appkey‘&quality=‘ 清晰度1,2’&type=mp4
 
 
+###########
+#  番剧
+###########
+https://bangumi.bilibili.com/jsonp/seasoninfo/{sid}.ver?
+
 # Emoji列表
 'http://api.bilibili.com/x/v2/reply/web/emojis'

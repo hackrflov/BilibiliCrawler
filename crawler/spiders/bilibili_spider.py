@@ -15,7 +15,7 @@ import scrapy
 from scrapy import selector
 import requests
 import pymongo
-from crawler.items import UserItem, VideoItem, DanmakuItem
+from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
 
 class BilibiliSpider(scrapy.Spider):
     name = 'bilibili'
@@ -23,13 +23,13 @@ class BilibiliSpider(scrapy.Spider):
     def clear_db(self):
         client = pymongo.MongoClient()
         db = client.bilibili
-        #db.user.delete_many({})
+        db.user.delete_many({})
         db.video.delete_many({})
         db.danmaku.delete_many({})
 
     def start_requests(self):
         self.clear_db()
-        self.limit = 100
+        self.limit = 1000
         # user info
         for i in range(self.limit):
             mid = 15271601 + i
@@ -37,6 +37,7 @@ class BilibiliSpider(scrapy.Spider):
             request = scrapy.Request(url=url, callback=self.parse_user_seed)
             request.meta['mid'] = mid
             yield request
+
         # video seed
         for i in range(self.limit):
             aid = 12903318 + i
@@ -45,9 +46,15 @@ class BilibiliSpider(scrapy.Spider):
             request.meta['aid'] = aid
             yield request
 
+        # bangumi seed
+        for i in range(self.limit):
+            sid = 1 + i
+            url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid) 
+            request = scrapy.Request(url=url, callback=self.parse_bangumi)
+            request.meta['sid'] = sid
+            yield request
+
     def parse_user_seed(self, response):
-        print response.meta
-        print response.body[:40]
         raw = json.loads(response.body)
         if 'code' in raw and raw['code'] < 0:
             return
@@ -201,3 +208,17 @@ class BilibiliSpider(scrapy.Spider):
             dmk['msg'] = row.xpath('text()').extract()[0]
             yield dmk
 
+    def parse_bangumi(self, response):
+        sid = response.meta['sid']
+        raw = re.search('(?<=seasonListCallback\().*?(?=\);)', response.body).group()
+        data = json.loads(raw)['result']
+        data['sid'] = sid
+        tags = []
+        for t in data['tags']:
+            tags.append(t['tag_name'])
+        data['tags'] = tags
+
+        # yield item
+        bangumi = BangumiItem()
+        bangumi.fill(data)
+        yield bangumi
