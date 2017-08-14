@@ -51,6 +51,7 @@ class UserItem(BilibiliItem):
 class VideoItem(BilibiliItem):
 
     aid = scrapy.Field()  # AV号
+    cid = scrapy.Field()  # 视频号
     pubdate = scrapy.Field()  # 日期
     title = scrapy.Field()  # 标题
     description = scrapy.Field()  # 描述

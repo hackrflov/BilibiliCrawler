@@ -10,7 +10,7 @@
 import logging
 log = logging.getLogger('scrapy.pipeline')
 
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
 
 
@@ -19,6 +19,11 @@ class DstPipeline(object):
         return item
 
 class BilibiliPipeline(object):
+
+    def __init__(self):
+        self.items = []  # for insert_many
+        self.BUFF_LIMIT = 100
+
     def process_item(self, item, spider):
         client = MongoClient()
         db = client.bilibili
@@ -38,22 +43,30 @@ class BilibiliPipeline(object):
             key = 'sid'
         clt = db[clt_name]
         if len(item) > 2:
-            self.upsert(item, clt, key)
+            self.bulk_upsert(item, clt, key)
         elif len(item) == 2:
             self.append(item, clt, key)
 
     """
-    method: insert & update item
+    method: save items to queue, then insert & update them in one connection
     input @item: scrapy item
     input @clt: pymongo collection
     input @key: primary key
     """
-    def upsert(self, item, clt, key):
-        try:
-            clt.update({ key: item[key] }, { '$set': dict(item) }, upsert=True)
-            log.info('add {key} into collection {CLT_NAME} successfully, now having {COUNT} documents'.format(key=item[key], CLT_NAME=clt.name, COUNT=clt.count()))
-        except Exception as e:
-            log.error('occur errors when adding into collection {CLT_NAME}, item = {ITEM}, error info: {ERROR}'.format(CLT_NAME=clt.name, ITEM=item, ERROR=e))
+    def bulk_upsert(self, item, clt, key):
+        self.items.append(item)
+        if len(self.items) >= self.BUFF_LIMIT:
+            requests = []
+            for item in self.items:
+                operation = UpdateOne({ key: item[key] }, { '$set': dict(item) }, upsert=True)
+                requests.append(operation)
+            try:
+                result = clt.bulk_write(requests)
+                log.info('add {NUM} into collection {CLT_NAME} successfully, now having {COUNT} documents'.format(NUM=len(self.items), CLT_NAME=clt.name, COUNT=clt.count()))
+            except Exception as e:
+                log.error('occur errors when adding into collection {CLT_NAME}, items = {ITEMS}, error info: {ERROR}'.format(CLT_NAME=clt.name, ITEMS=self.items, ERROR=e))
+            # clear list
+            self.items = []
 
     def append(self, item, clt, key):
         key_index = item.keys().index(key)

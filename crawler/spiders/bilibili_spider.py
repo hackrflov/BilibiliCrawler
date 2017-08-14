@@ -28,7 +28,7 @@ class BilibiliSpider(scrapy.Spider):
         db.danmaku.delete_many({})
 
     def start_requests(self):
-        self.clear_db()
+        # self.clear_db()
         self.limit = 1000
         # user info
         for i in range(self.limit):
@@ -36,11 +36,12 @@ class BilibiliSpider(scrapy.Spider):
             url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
             request = scrapy.Request(url=url, callback=self.parse_user_seed)
             request.meta['mid'] = mid
-            yield request
+#            yield request
 
         # video seed
         for i in range(self.limit):
             aid = 12903318 + i
+            #aid = 9402549 + i
             url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
             request = scrapy.Request(url=url, callback=self.parse_video_seed)
             request.meta['aid'] = aid
@@ -52,7 +53,7 @@ class BilibiliSpider(scrapy.Spider):
             url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid) 
             request = scrapy.Request(url=url, callback=self.parse_bangumi)
             request.meta['sid'] = sid
-            yield request
+#            yield request
 
     def parse_user_seed(self, response):
         raw = json.loads(response.body)
@@ -135,11 +136,13 @@ class BilibiliSpider(scrapy.Spider):
         # next request: video detail
         aid = response.meta['aid']
         detail_url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
-        yield scrapy.Request(url=detail_url, callback=self.parse_video_detail)
+        request = scrapy.Request(url=detail_url, callback=self.parse_video_detail)
+        request.meta['cid'] = cid
+        #yield request
 
         # next request: video stat
         stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
-        yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
+        #yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
 
         # next request: danmaku seed
         danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
@@ -159,6 +162,7 @@ class BilibiliSpider(scrapy.Spider):
         raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
         wrap = json.loads(raw)
         data = wrap['videoReducer']
+        data['cid'] = response.meta['cid'] 
 
         # extract tag list
         if 'videoTag' in wrap:
@@ -167,6 +171,7 @@ class BilibiliSpider(scrapy.Spider):
             for i, tag in enumerate(tags):
                 tags[i] = tag['tag_name']
             data['tags'] = tags
+
 
         # yield item
         video = VideoItem()

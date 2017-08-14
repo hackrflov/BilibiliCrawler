@@ -27,6 +27,7 @@ def fetch_data():
     return cur
 
 def fetch_and_calc():
+    '''
     for user in db.user.find():
 #        pdb.set_trace()
         mid = user['mid']
@@ -36,6 +37,14 @@ def fetch_and_calc():
             print user
             print video
             print '######'
+
+    '''
+    for video in db.video.find():
+        aid = video['aid']
+        cid = video['cid']
+        # find danmaku
+        for dmk in db.danmaku.find({'cid':cid}):
+            print dmk
 
 if __name__ == '__main__':
     client = MongoClient()
