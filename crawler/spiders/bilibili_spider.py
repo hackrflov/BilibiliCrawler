@@ -20,6 +20,9 @@ from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
 class BilibiliSpider(scrapy.Spider):
     name = 'bilibili'
 
+    """
+    method: delete all existing data
+    """
     def clear_db(self):
         client = pymongo.MongoClient()
         db = client.bilibili
@@ -29,31 +32,32 @@ class BilibiliSpider(scrapy.Spider):
 
     def start_requests(self):
         # self.clear_db()
-        self.limit = 1000
-        # user info
+        self.limit = 10000
+
+        # fetch user seed
         for i in range(self.limit):
             mid = 15271601 + i
             url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
             request = scrapy.Request(url=url, callback=self.parse_user_seed)
+            request.meta['force_proxy'] = True
             request.meta['mid'] = mid
-#            yield request
+            yield request
 
-        # video seed
+        # fetch video seed
         for i in range(self.limit):
             aid = 12903318 + i
-            #aid = 9402549 + i
             url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
             request = scrapy.Request(url=url, callback=self.parse_video_seed)
             request.meta['aid'] = aid
             yield request
 
-        # bangumi seed
+        # fetch bangumi seed
         for i in range(self.limit):
             sid = 1 + i
-            url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid) 
+            url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid)
             request = scrapy.Request(url=url, callback=self.parse_bangumi)
             request.meta['sid'] = sid
-#            yield request
+            yield request
 
     def parse_user_seed(self, response):
         raw = json.loads(response.body)
@@ -108,6 +112,9 @@ class BilibiliSpider(scrapy.Spider):
         data = raw['data']
         mid = response.meta['mid']
         max_page = data['pages']
+        if max_page == 0:
+            return
+
         subs = [f['season_id'] for f in data['result']]
         user = UserItem()
         user.fill({'mid': mid, 'subscribe': subs})
@@ -138,11 +145,11 @@ class BilibiliSpider(scrapy.Spider):
         detail_url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
         request = scrapy.Request(url=detail_url, callback=self.parse_video_detail)
         request.meta['cid'] = cid
-        #yield request
+        yield request
 
         # next request: video stat
         stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
-        #yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
+        yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
 
         # next request: danmaku seed
         danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
@@ -162,7 +169,7 @@ class BilibiliSpider(scrapy.Spider):
         raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
         wrap = json.loads(raw)
         data = wrap['videoReducer']
-        data['cid'] = response.meta['cid'] 
+        data['cid'] = response.meta['cid']
 
         # extract tag list
         if 'videoTag' in wrap:

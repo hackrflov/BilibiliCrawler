@@ -11,6 +11,7 @@ import re
 import random
 import json
 import base64
+import requests
 import logging
 
 log = logging.getLogger('scrapy.proxy')
@@ -24,83 +25,52 @@ class RandomUserAgentMiddleware(object):
         request.headers["User-Agent"] = random.choice(USER_AGENTS)
 
 """
-Clone and modify from
+Cloned and modified from
 https://github.com/aivarsk/scrapy-proxies.git
 """
 class RandomProxyMiddleware(object):
 
     def __init__(self, settings):
-        self.proxy_list = settings.get('PROXY_LIST')
+        self.proxy_list = []
         self.RETRY_TIMES = settings.get('RETRY_TIMES')
-        if self.proxy_list is None:
-            raise KeyError('PROXY_LIST setting is missing')
-
         self.fetch_proxies()
 
     def fetch_proxies(self):
-        fin = open(self.proxy_list)
-        self.proxies = {}
-        for line in fin.readlines():
-            parts = re.match('(\w+://)(\w+:\w+@)?(.+)', line.strip())
-            if not parts:
+        log.info('Fetching proxy list...')
+        # Thanks @fate0 for providing this awesome list
+        url = 'https://raw.githubusercontent.com/fate0/proxylist/master/proxy.list'
+        r = requests.get(url)
+        data = r.text.split('\n')
+        for msg in data:
+            if msg == '':
                 continue
-
-            # Cut trailing @
-            if parts.group(2):
-                user_pass = parts.group(2)[:-1]
-            else:
-                user_pass = ''
-
-            self.proxies[parts.group(1) + parts.group(3)] = user_pass
-        fin.close()
+            try:
+                msg = json.loads(msg)
+                proxy = '{_type}://{host}:{port}'.format(_type=msg['type'], host=msg['host'], port=msg['port'])
+                if proxy not in self.proxy_list:
+                    self.proxy_list.append(proxy)
+            except Exception as e:
+                log.error('Fetch proxies failed, msg is {msg}, error detail: {err}'.format(msg=msg,err=e))
+        log.info('Proxy fetching is done, get {} proxies'.format(len(self.proxy_list)))
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler.settings)
 
     def process_request(self, request, spider):
-        # Don't overwrite with a random one (server-side state for IP)
-        if 'proxy' in request.meta:
-            if request.meta["exception"] is False:
-                return
-        request.meta["exception"] = False
-        if len(self.proxies) == 0:
-            raise ValueError('All proxies are unusable, cannot proceed')
-
-        proxy_address = random.choice(list(self.proxies.keys()))
-        proxy_user_pass = self.proxies[proxy_address]
-
-        if proxy_user_pass:
+        # If contain force_proxy key or retry_times key, add proxy
+        if 'force_proxy' in request.meta or 'retry_times' in request.meta:
+            proxy_address = random.choice(self.proxy_list)
             request.meta['proxy'] = proxy_address
-            basic_auth = 'Basic ' + base64.b64encode(proxy_user_pass.encode()).decode()
-            request.headers['Proxy-Authorization'] = basic_auth
-        else:
-            log.debug('Proxy user pass not found')
-        log.debug('Using proxy <%s>, %d proxies left' % (
-                proxy_address, len(self.proxies)))
+            log.debug('Using proxy <%s>, %d proxies left' % (proxy_address, len(self.proxy_list)))
 
     def process_exception(self, request, exception, spider):
-        if 'proxy' not in request.meta:
-            return
-        proxy = request.meta['proxy']
-        try:
-            del self.proxies[proxy]
-        except KeyError:
-            pass
-        request.meta["exception"] = True
-        log.warning('Removing failed proxy <%s>, %d proxies left' % (
-                proxy, len(self.proxies)))
-
-        if len(self.proxies) <= 10:
-            self.fetch_proxies()
-
-    def process_response(self, request, response, spider):
-        if 'retry_times' in request.meta and \
-                request.meta['retry_times'] >= self.RETRY_TIMES and \
-                'proxy' in request.meta:        # try do not use proxy
-            del request.meta['proxy']
-            print response.status, request.url, request.meta
-            return request
-        else:
-            return response
+        if 'proxy' in request.meta:
+            proxy = request.meta['proxy']
+            log.info('Failed to connect {u}... Removing proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
+            if proxy in self.proxy_list:
+                self.proxy_list.remove(proxy)
+            # check usable proxy and update
+            if len(self.proxy_list) <= 10:
+                self.fetch_proxies()
 

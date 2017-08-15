@@ -4,43 +4,43 @@
 # Author: hackrflov
 # Date: 2017-08-11
 
+import os
+
 BOT_NAME = 'bilibili'
 
 SPIDER_MODULES = ['crawler.spiders']
 NEWSPIDER_MODULE = 'crawler.spiders'
 
-LOG_LEVEL = 'INFO'
+#LOG_LEVEL = 'INFO'
+LOG_LEVEL = 'DEBUG'
 
 # max waiting time
-DOWNLOAD_TIMEOUT = 5
+DOWNLOAD_TIMEOUT = 15
 
 # Disable cookies to avoid banned
 COOKIES_ENABLED = False
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+#ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
-###### Proxy Configuration #####
 # Retry many times since proxies often fail
 RETRY_TIMES = 10
 # Retry on most error codes since proxies fail for different reasons
-RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
+RETRY_HTTP_CODES = [302, 500, 503, 504, 400, 403, 404, 408]
+
+# No redirect
+REDIRECT_ENABLED = False
 
 DOWNLOADER_MIDDLEWARES = {
-    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 90,
     'crawler.middlewares.RandomProxyMiddleware': 100,
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 120,
 
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     'crawler.middlewares.RandomUserAgentMiddleware': 543
 }
 
-# Proxy list containing entries like
-# http://host1:port
-# http://username:password@host2:port
-# http://host3:port
-# ...
-PROXY_LIST = 'proxy/proxy_list.txt'
 
 ##### End Proxy Configuration ######
 
