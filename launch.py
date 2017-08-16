@@ -1,5 +1,8 @@
 import os
+import sys
 
-os.system('scrapy crawl bilibili')
-#os.system('nohup python crawler/proxy/proxyspider.py > log.txt &')
+if len(sys.argv) >= 2:  # with extra argument
+    os.system('scrapy crawl bilibili -a collection={}'.format(sys.argv[1]))
+else:
+    os.system('scrapy crawl bilibili')
 

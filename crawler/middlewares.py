@@ -13,7 +13,6 @@ import json
 import base64
 import requests
 import logging
-
 log = logging.getLogger('scrapy.proxy')
 
 from user_agents import USER_AGENTS
@@ -60,17 +59,34 @@ class RandomProxyMiddleware(object):
     def process_request(self, request, spider):
         # If contain force_proxy key or retry_times key, add proxy
         if 'force_proxy' in request.meta or 'retry_times' in request.meta:
-            proxy_address = random.choice(self.proxy_list)
-            request.meta['proxy'] = proxy_address
-            log.debug('Using proxy <%s>, %d proxies left' % (proxy_address, len(self.proxy_list)))
+            proxy = random.choice(self.proxy_list)
+            request.meta['proxy'] = proxy
+            log.debug('Connect to {u} ... Using proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
 
     def process_exception(self, request, exception, spider):
         if 'proxy' in request.meta:
             proxy = request.meta['proxy']
-            log.info('Failed to connect {u}... Removing proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
-            if proxy in self.proxy_list:
-                self.proxy_list.remove(proxy)
-            # check usable proxy and update
-            if len(self.proxy_list) <= 10:
-                self.fetch_proxies()
+            self.remove_one(proxy)
+            log.info('Failed to connect {u} ... Removing proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
 
+    def process_response(self, request, response, spider):
+        if 'proxy' in request.meta:
+            proxy = request.meta['proxy']
+            self.remove_one(proxy)
+            log.info('Failed to connect {u} ... Removing proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
+        return response
+
+    """
+    method: remove failed proxy from proxy list
+    """
+    def remove_one(self, proxy):
+        if proxy in self.proxy_list:
+            self.proxy_list.remove(proxy)
+            self.update_pool()
+
+    """
+    method: check & update pool - keep usable
+    """
+    def update_pool(self):
+        if len(self.proxy_list) <= 100:
+            self.fetch_proxies()

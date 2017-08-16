@@ -14,9 +14,6 @@ NEWSPIDER_MODULE = 'crawler.spiders'
 #LOG_LEVEL = 'INFO'
 LOG_LEVEL = 'DEBUG'
 
-# max waiting time
-DOWNLOAD_TIMEOUT = 15
-
 # Disable cookies to avoid banned
 COOKIES_ENABLED = False
 
@@ -24,10 +21,12 @@ COOKIES_ENABLED = False
 #ROBOTSTXT_OBEY = True
 ROBOTSTXT_OBEY = False
 
+# Max waiting time
+DOWNLOAD_TIMEOUT = 10
 # Retry many times since proxies often fail
 RETRY_TIMES = 10
 # Retry on most error codes since proxies fail for different reasons
-RETRY_HTTP_CODES = [302, 500, 503, 504, 400, 403, 404, 408]
+RETRY_HTTP_CODES = [302, 500, 503, 504, 400, 403, 408]
 
 # No redirect
 REDIRECT_ENABLED = False

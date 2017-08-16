@@ -16,9 +16,15 @@ from scrapy import selector
 import requests
 import pymongo
 from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
+import logging
+log = logging.getLogger('scrapy.spider')
 
 class BilibiliSpider(scrapy.Spider):
     name = 'bilibili'
+
+    def __init__(self, collection='', *args, **kwargs):
+        super(BilibiliSpider, self).__init__(*args, **kwargs)
+        self.collection = collection
 
     """
     method: delete all existing data
@@ -31,33 +37,40 @@ class BilibiliSpider(scrapy.Spider):
         db.danmaku.delete_many({})
 
     def start_requests(self):
+        # Uncomment to crawl totally fresh
         # self.clear_db()
-        self.limit = 10000
 
-        # fetch user seed
-        for i in range(self.limit):
-            mid = 15271601 + i
-            url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
-            request = scrapy.Request(url=url, callback=self.parse_user_seed)
-            request.meta['force_proxy'] = True
-            request.meta['mid'] = mid
-            yield request
+        # use cmd input to fetch specific data
+        clt = self.collection
+        FETCH_LIMIT = 10000
 
-        # fetch video seed
-        for i in range(self.limit):
-            aid = 12903318 + i
-            url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
-            request = scrapy.Request(url=url, callback=self.parse_video_seed)
-            request.meta['aid'] = aid
-            yield request
+        # Fetch for user
+        if clt in ['user','']:
+            for i in range(FETCH_LIMIT):
+                mid = 15271601 + i
+                url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+                request = scrapy.Request(url=url, callback=self.parse_user_seed)
+                request.meta['force_proxy'] = True
+                request.meta['mid'] = mid
+                yield request
 
-        # fetch bangumi seed
-        for i in range(self.limit):
-            sid = 1 + i
-            url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid)
-            request = scrapy.Request(url=url, callback=self.parse_bangumi)
-            request.meta['sid'] = sid
-            yield request
+        # Fetch for video
+        if clt in ['video','']:
+            for i in range(FETCH_LIMIT):
+                aid = 12903318 + i
+                url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
+                request = scrapy.Request(url=url, callback=self.parse_video_seed)
+                request.meta['aid'] = aid
+                yield request
+
+        # Fetch for bangumi
+        if clt in ['bangumi','']:
+            for i in range(FETCH_LIMIT):
+                sid = 1 + i
+                url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid)
+                request = scrapy.Request(url=url, callback=self.parse_bangumi)
+                request.meta['sid'] = sid
+                yield request
 
     def parse_user_seed(self, response):
         raw = json.loads(response.body)
@@ -155,7 +168,7 @@ class BilibiliSpider(scrapy.Spider):
         danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
         request = scrapy.Request(url=danmaku_url, callback=self.parse_danmaku_seed)
         request.meta['cid'] = cid
-        yield request
+        #yield request
 
     def parse_video_stat(self, response):
         data = json.loads(response.body)['data']
