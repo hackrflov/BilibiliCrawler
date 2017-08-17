@@ -1,11 +1,12 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''
-    File name: items.py
+"""
+    File Name: items.py
+    Date: 08/11/2017
     Author: hackrflov
-    Date created: 8/11/2017
-    Python version: 2.7
-'''
+    Email: hackrflov@gmail.com
+    Python Version: 2.7
+"""
 
 import scrapy
 
@@ -43,6 +44,14 @@ class UserItem(BilibiliItem):
     coins = scrapy.Field()  # 硬币数
     playNum = scrapy.Field()  # 播放数
 
+    # return unique key
+    def unique_key(self):
+        return 'mid'
+
+    # return corresponding db name
+    def db_name(self):
+        return 'user'
+
 """
 视频数据
 数据源1: http://m.bilibili.com/video/av{AID}.html
@@ -75,6 +84,13 @@ class VideoItem(BilibiliItem):
     his_rank = scrapy.Field()  # 最高排名
     copyright = scrapy.Field()  # 版权
 
+    # return unique key
+    def unique_key(self):
+        return 'aid'
+
+    # return corresponding db name
+    def db_name(self):
+        return 'video'
 
 """
 弹幕数据
@@ -93,6 +109,14 @@ class DanmakuItem(BilibiliItem):
     uid = scrapy.Field()  # 弹幕ID
     msg = scrapy.Field()  # 文本
 
+    # return unique key
+    def unique_key(self):
+        return 'uid'
+
+    # return corresponding db name
+    def db_name(self):
+        return 'danmaku'
+
 """
 番剧数据
 数据源: http://bangumi.bilibili.com/jsonp/seasoninfo/{sid}.ver?
@@ -110,4 +134,12 @@ class BangumiItem(BilibiliItem):
     play_count = scrapy.Field()  # 播放数
     favorites = scrapy.Field()  # 追番数
     danmaku_count = scrapy.Field()  # 弹幕数
+
+    # return unique key
+    def unique_key(self):
+        return 'sid'
+
+    # return corresponding db name
+    def db_name(self):
+        return 'bangumi'
 

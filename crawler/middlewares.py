@@ -1,11 +1,12 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''
-    File name: middlewares.py
+"""
+    File Name: middlewares.py
+    Date: 08/11/2017
     Author: hackrflov
-    Date created: 8/11/2017
-    Python version: 2.7
-'''
+    Email: hackrflov@gmail.com
+    Python Version: 2.7
+"""
 
 import re
 import random

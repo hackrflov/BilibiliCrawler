@@ -1,8 +1,12 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Filename: settings.py
-# Author: hackrflov
-# Date: 2017-08-11
+"""
+    File Name: settings.py
+    Date: 08/11/2017
+    Author: hackrflov
+    Email: hackrflov@gmail.com
+    Python Version: 2.7
+"""
 
 import os
 
@@ -11,8 +15,8 @@ BOT_NAME = 'bilibili'
 SPIDER_MODULES = ['crawler.spiders']
 NEWSPIDER_MODULE = 'crawler.spiders'
 
-#LOG_LEVEL = 'INFO'
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = 'INFO'
+#LOG_LEVEL = 'DEBUG'
 
 # Disable cookies to avoid banned
 COOKIES_ENABLED = False
@@ -22,7 +26,7 @@ COOKIES_ENABLED = False
 ROBOTSTXT_OBEY = False
 
 # Max waiting time
-DOWNLOAD_TIMEOUT = 10
+DOWNLOAD_TIMEOUT = 5
 # Retry many times since proxies often fail
 RETRY_TIMES = 10
 # Retry on most error codes since proxies fail for different reasons

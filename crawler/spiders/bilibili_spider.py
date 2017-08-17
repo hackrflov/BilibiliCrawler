@@ -1,11 +1,12 @@
-# -*- encoding: utf-8 -*-
-
-'''
-    File name: bilibili_spider.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+    File Name: bilibili_spider.py
+    Date: 08/11/2017
     Author: hackrflov
-    Date created: 8/11/2017
-    Python version: 2.7
-'''
+    Email: hackrflov@gmail.com
+    Python Version: 2.7
+"""
 
 import re
 import json
@@ -38,16 +39,16 @@ class BilibiliSpider(scrapy.Spider):
 
     def start_requests(self):
         # Uncomment to crawl totally fresh
-        # self.clear_db()
+        #self.clear_db()
 
         # use cmd input to fetch specific data
         clt = self.collection
-        FETCH_LIMIT = 10000
+        FETCH_LIMIT = 100000
 
         # Fetch for user
         if clt in ['user','']:
             for i in range(FETCH_LIMIT):
-                mid = 15271601 + i
+                mid = 13271601 + i
                 url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
                 request = scrapy.Request(url=url, callback=self.parse_user_seed)
                 request.meta['force_proxy'] = True
@@ -57,10 +58,19 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for video
         if clt in ['video','']:
             for i in range(FETCH_LIMIT):
-                aid = 12903318 + i
+                aid = 11903318 + i
                 url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
                 request = scrapy.Request(url=url, callback=self.parse_video_seed)
                 request.meta['aid'] = aid
+                yield request
+
+        # Fetch for danmaku
+        if clt in ['danmaku','']:
+            for i in range(FETCH_LIMIT):
+                cid = 21707234 + i
+                danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
+                request = scrapy.Request(url=danmaku_url, callback=self.parse_danmaku_seed)
+                request.meta['cid'] = cid
                 yield request
 
         # Fetch for bangumi
@@ -164,12 +174,6 @@ class BilibiliSpider(scrapy.Spider):
         stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
         yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
 
-        # next request: danmaku seed
-        danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
-        request = scrapy.Request(url=danmaku_url, callback=self.parse_danmaku_seed)
-        request.meta['cid'] = cid
-        #yield request
-
     def parse_video_stat(self, response):
         data = json.loads(response.body)['data']
         video = VideoItem()
@@ -191,7 +195,6 @@ class BilibiliSpider(scrapy.Spider):
             for i, tag in enumerate(tags):
                 tags[i] = tag['tag_name']
             data['tags'] = tags
-
 
         # yield item
         video = VideoItem()
@@ -230,7 +233,10 @@ class BilibiliSpider(scrapy.Spider):
             dmk['hashID'] = pl[6]
             dmk['uid'] = pl[7]
             dmk['cid'] = response.meta['cid']
-            dmk['msg'] = row.xpath('text()').extract()[0]
+            try: # This may not contain any text
+                dmk['msg'] = row.xpath('text()').extract()[0]
+            except:
+                pass
             yield dmk
 
     def parse_bangumi(self, response):
