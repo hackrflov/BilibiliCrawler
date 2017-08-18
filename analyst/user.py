@@ -11,8 +11,8 @@
 from pymongo import MongoClient
 from pprint import pprint
 
-con = MongoClient()
-db = con.bilibili
+client = MongoClient()
+db = client.bilibili
 
 """
 method: list users' places distribution and count

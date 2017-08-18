@@ -68,13 +68,13 @@ class RandomProxyMiddleware(object):
         if 'proxy' in request.meta:
             proxy = request.meta['proxy']
             self.remove_one(proxy)
-            log.info('Failed to connect {u} ... Removing proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
+            log.info('Failed to connect {u} ... Removing proxy <{p}>, {n} left, details: {d}'.format(u=request.url, p=proxy, n=len(self.proxy_list), d=exception))
 
     def process_response(self, request, response, spider):
-        if 'proxy' in request.meta:
+        if 'proxy' in request.meta and response.status != 200:
             proxy = request.meta['proxy']
             self.remove_one(proxy)
-            log.info('Failed to connect {u} ... Removing proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
+            log.info('Failed to connect {u} ... Removing proxy <{p}>, {n} left, details: {d}'.format(u=request.url, p=proxy, n=len(self.proxy_list), d=response.status))
         return response
 
     """

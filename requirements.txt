@@ -1,3 +1,4 @@
 scrapy
 pymongo
 requests
+tenacity

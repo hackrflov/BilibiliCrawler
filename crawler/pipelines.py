@@ -32,16 +32,16 @@ class BilibiliPipeline(object):
     def process_item(self, item, spider):
 
         # get collection and unique key
-        clt = self.db[item.db_name()]
-        key = item.unique_key()
+        clt = self.db[item._db_name]
+        key = item._unique_key
 
         # check index
         clt.create_index(key)
 
         # push into db in two ways
-        if len(item) > 2:
+        if item._type == 'default':
             self.upsert(item, clt, key)
-        elif len(item) == 2:
+        elif item._type == 'append':
             self.append(item, clt, key)
 
     """
@@ -49,7 +49,7 @@ class BilibiliPipeline(object):
     input @clt: pymongo collection
     """
     def upsert(self, item, clt, key):
-        op = UpdateOne({ key: item[key] }, { '$set': dict(item) }, upsert=True)
+        op = UpdateOne({ key: item[key] }, { '$set': item.valid_fields() }, upsert=True)
         self.push_operation(op, clt)
 
     """
@@ -57,10 +57,11 @@ class BilibiliPipeline(object):
     input @clt: pymongo collection
     """
     def append(self, item, clt, key):
-        key_index = item.keys().index(key)
-        arr_key = item.keys()[1-key_index]  # get another key
-        op = UpdateOne({ key: item[key] }, { '$addToSet': { arr_key: item[arr_key] }} )
-        self.push_operation(op, clt)
+        fields = item.valid_fields()
+        for add_key in fields.keys():
+            if add_key != key:  # not equal to unique key
+                op = UpdateOne({ key: item[key] }, { '$addToSet': { add_key: { '$each' : item[add_key] } } } )
+                self.push_operation(op, clt)
 
     """
     method: collect multiple operations
@@ -75,7 +76,6 @@ class BilibiliPipeline(object):
         if len(reqs) >= self.OP_LIMIT_SIZE:
             self.bulk_write(clt, reqs)
             self.operations[clt.name] = []
-            log.info('size={}'.format(len(self.operations[clt.name])))
 
     """
     method: write multiple requests into db

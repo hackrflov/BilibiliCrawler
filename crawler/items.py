@@ -16,10 +16,22 @@ class BilibiliItem(scrapy.Item):
             if key in self.fields:
                 self[key] = value
 
+    def valid_fields(self):
+        fields = {}
+        for key, value in dict(self).iteritems():
+            if key[0] != '_':
+                fields[key] = value
+        return fields
+
+    # setting properties
+    _type = 'default' # default: upsert ; append: add into array
+
+
 """
 用户数据
 数据源1: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
 数据源2: http://api.bilibili.com/cardrich?mid={MID}&type={TYPE}
+数据源3: http://m.bilibili.com/space/{MID}
 """
 class UserItem(BilibiliItem):
 
@@ -27,30 +39,27 @@ class UserItem(BilibiliItem):
     name = scrapy.Field()  # 昵称
     approve = scrapy.Field()  # 是否认证
     sex = scrapy.Field()  # 性别
-    face = scrapy.Field()  # 头像
+    # face = scrapy.Field()  # 头像
     regtime = scrapy.Field()  # 注册时间
     place = scrapy.Field()  # 地区
     birthday = scrapy.Field()  # 生日
-    sign = scrapy.Field()  # 签名
-    description = scrapy.Field()  # 描述
+    # sign = scrapy.Field()  # 签名
+    # description = scrapy.Field()  # 描述
     fans = scrapy.Field()  # 粉丝数
     attentions = scrapy.Field()  # 关注列表
     attention = scrapy.Field()  # 关注数
-    level_info = scrapy.Field()  # 等级
+    level = scrapy.Field()  # 等级
     nameplate = scrapy.Field()  # 勋章
-
-    favs = scrapy.Field()  # 收藏视频
-
-    coins = scrapy.Field()  # 硬币数
+    # coins = scrapy.Field()  # 硬币数
     playNum = scrapy.Field()  # 播放数
 
-    # return unique key
-    def unique_key(self):
-        return 'mid'
+    favs = scrapy.Field()  # 收藏视频
+    subscribe = scrapy.Field()  # 订阅番剧
 
-    # return corresponding db name
-    def db_name(self):
-        return 'user'
+    # setting properties
+    _unique_key = 'mid'
+    _db_name = 'user'
+
 
 """
 视频数据
@@ -63,16 +72,16 @@ class VideoItem(BilibiliItem):
     cid = scrapy.Field()  # 视频号
     pubdate = scrapy.Field()  # 日期
     title = scrapy.Field()  # 标题
-    description = scrapy.Field()  # 描述
+    # description = scrapy.Field()  # 描述
     mid = scrapy.Field()  # 作者ID
-    writer = scrapy.Field()  # 作者昵称
+    # writer = scrapy.Field()  # 作者昵称
     duration = scrapy.Field()  # 时长
     toptype = scrapy.Field()  # 分区
     tags = scrapy.Field()  # 标签
     typeid = scrapy.Field()  # 类别ID
     typename = scrapy.Field()  # 类别
-    totalpage = scrapy.Field()  # 页数
-    litpic = scrapy.Field()  # 封面
+    # totalpage = scrapy.Field()  # 页数
+    # litpic = scrapy.Field()  # 封面
 
     view = scrapy.Field()  # 浏览数
     danmaku = scrapy.Field()  # 弹幕数
@@ -80,17 +89,14 @@ class VideoItem(BilibiliItem):
     favorite = scrapy.Field()  # 收藏数
     coin = scrapy.Field()  # 硬币数
     share = scrapy.Field()  # 分享数
-    now_rank = scrapy.Field()  # 当前排名
+    # now_rank = scrapy.Field()  # 当前排名
     his_rank = scrapy.Field()  # 最高排名
     copyright = scrapy.Field()  # 版权
 
-    # return unique key
-    def unique_key(self):
-        return 'aid'
+    # setting properties
+    _unique_key = 'aid'
+    _db_name = 'video'
 
-    # return corresponding db name
-    def db_name(self):
-        return 'video'
 
 """
 弹幕数据
@@ -109,13 +115,10 @@ class DanmakuItem(BilibiliItem):
     uid = scrapy.Field()  # 弹幕ID
     msg = scrapy.Field()  # 文本
 
-    # return unique key
-    def unique_key(self):
-        return 'uid'
+    # setting properties
+    _unique_key = 'uid'
+    _db_name = 'danmaku'
 
-    # return corresponding db name
-    def db_name(self):
-        return 'danmaku'
 
 """
 番剧数据
@@ -135,11 +138,7 @@ class BangumiItem(BilibiliItem):
     favorites = scrapy.Field()  # 追番数
     danmaku_count = scrapy.Field()  # 弹幕数
 
-    # return unique key
-    def unique_key(self):
-        return 'sid'
-
-    # return corresponding db name
-    def db_name(self):
-        return 'bangumi'
+    # setting properties
+    _unique_key = 'sid'
+    _db_name = 'bangumi'
 
