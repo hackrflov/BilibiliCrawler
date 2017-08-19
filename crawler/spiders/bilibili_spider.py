@@ -8,12 +8,13 @@
     Python Version: 2.7
 """
 
+import sys
 import re
 import json
 import pdb
 
 import scrapy
-from scrapy import selector
+from scrapy import selector, signals
 import requests
 import pymongo
 from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
@@ -21,7 +22,9 @@ from tenacity import retry
 import logging
 log = logging.getLogger('scrapy.spider')
 
+
 class BilibiliSpider(scrapy.Spider):
+
     name = 'bilibili'
 
     def __init__(self, collection='', *args, **kwargs):
@@ -279,4 +282,3 @@ class BilibiliSpider(scrapy.Spider):
         bangumi = BangumiItem()
         bangumi.fill(data)
         yield bangumi
-
