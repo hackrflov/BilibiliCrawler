@@ -110,7 +110,7 @@ class BilibiliSpiderMiddleware(object):
 
     def process_spider_output(self, response, result, spider):
         try:
-            re = result.next()
+            yield result.next()
         except Exception as e:
             if response.url in self.failed_urls:
                 self.failed_urls.remove(response.url)

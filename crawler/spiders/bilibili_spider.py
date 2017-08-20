@@ -63,7 +63,7 @@ class BilibiliSpider(scrapy.Spider):
         if clt in ['video','']:
             for i in range(FETCH_LIMIT):
                 #aid = 1 + i
-                aid = 647613 + i  # last record
+                aid = 809014 + i  # last record
                 url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
                 request = scrapy.Request(url=url, callback=self.parse_video_seed)
                 request.meta['aid'] = aid

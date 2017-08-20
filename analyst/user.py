@@ -8,48 +8,54 @@
     Python Version: 2.7
 """
 
-from pymongo import MongoClient
-from pprint import pprint
+import sys
 
-client = MongoClient()
-db = client.bilibili
+from bili_util import BiliUtil
 
-"""
-method: list users' places distribution and count
-"""
-def list_place():
-    docs = db.user.aggregate([
-        { '$group': { '_id': '$place',
-                      'count': { '$sum' : 1 } } },
-        { '$sort' : { 'count' : -1 } }
-    ])
-    show(docs)
+class User(BiliUtil):
 
-#======= TODO LIST ======
-#
-# $aggregate sex
-# $aggregate register_time
-# $aggregate birthday
-# $aggregate level
-#
-# $rank attetion
-# $rank follower
-# $rank playNum
-# $rank danmaku
-# $rank ratio - attention / follower
-#
-# $list fav
-# $list subscribe
-#
-#========================
+    clt_name = 'user'
 
+    @classmethod
+    def list(self):
+        list_str =  """\
+type '$ python user.py [- name]' with - names from following list:
+- find
+- sort_by_playNum
+- sort_by_attention
+- sort_by_regtime
+- count_by_sex
+- count_by_level
+- count_by_place\
 """
-method: print every doc inside
-"""
-def show(docs):
-    for doc in docs:
-        pprint(doc)
+        print list_str
+
+    def sort_by_playNum(self):
+        self.sort_by_key('playNum')
+
+    def sort_by_attention(self):
+        self.sort_by_key('attention')
+
+    def sort_by_regtime(self):
+        self.sort_by_key('regtime')
+
+    def count_by_place(self):
+        self.count_by_key('place')
+
+    def count_by_sex(self):
+        self.count_by_key('sex')
+
+    def count_by_level(self):
+        self.count_by_key('level')
+
+    def count_by_nameplate():
+        self.count_by_key('nameplate')
 
 if __name__ == '__main__':
-    list_place()
+    user = User()
+    if len(sys.argv) >= 2:
+        func_name = sys.argv[1]
+        getattr(user, func_name)()
+    else:
+        user.list()
 
