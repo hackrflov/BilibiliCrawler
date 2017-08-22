@@ -24,27 +24,14 @@ class Video(BiliUtil):
 
     clt_name = 'video'
 
-    @classmethod
-    def list(self):
-        list_str =  """\
-type '$ python user.py [func name]' with func names from following list:
-- find
-- sort_by_aid
-- sort_by_coins
-- sort_by_danmaku
-- sort_by_pubdate
-- sort_by_favorate
-- sort_by_reply
-- count_by_tagname
-- count_by_toptype\
-"""
-        print list_str
-
     def sort_by_aid(self):
         self.sort_by_key('aid')
 
-    def sort_by_coins(self):
-        self.sort_by_key('coins')
+    def sort_by_coin(self):
+        self.sort_by_key('coin')
+
+    def sort_by_view(self):
+        self.sort_by_key('view')
 
     def sort_by_danmaku(self):
         self.sort_by_key('danmaku')
@@ -58,8 +45,8 @@ type '$ python user.py [func name]' with func names from following list:
     def sort_by_reply(self):
         self.sort_by_key('reply')
 
-    def count_by_tagname(self):
-        self.count_by_key('tagname')
+    def count_by_typename(self):
+        self.count_by_key('typename')
 
     def count_by_toptype(self):
         self.count_by_key('toptype')

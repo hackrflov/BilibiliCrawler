@@ -13,7 +13,7 @@ import scrapy
 class BilibiliItem(scrapy.Item):
     def fill(self, data):
         for key, value in data.iteritems():
-            if key in self.fields:
+            if value and key in self.fields:
                 self[key] = value
 
     def valid_fields(self):
@@ -28,10 +28,10 @@ class BilibiliItem(scrapy.Item):
 
 
 """
-用户数据
-数据源1: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
-数据源2: http://api.bilibili.com/cardrich?mid={MID}&type={TYPE}
-数据源3: http://m.bilibili.com/space/{MID}
+Data source1: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
+Data source2: http://api.bilibili.com/cardrich?mid={MID}&type={TYPE}
+Data source3: http://m.bilibili.com/space/{MID}
+Data source4: https://app.bilibili.com/x/v2/space?vmid={MID}&build=1&ps=1
 """
 class UserItem(BilibiliItem):
 
@@ -46,12 +46,12 @@ class UserItem(BilibiliItem):
     # sign = scrapy.Field()  # 签名
     # description = scrapy.Field()  # 描述
     fans = scrapy.Field()  # 粉丝数
-    attentions = scrapy.Field()  # 关注列表
+    attentions = scrapy.Field()  # 关注列表 TODO
     attention = scrapy.Field()  # 关注数
     level = scrapy.Field()  # 等级
     nameplate = scrapy.Field()  # 勋章
     # coins = scrapy.Field()  # 硬币数
-    playNum = scrapy.Field()  # 播放数
+    # playNum = scrapy.Field()  # 播放数
 
     favs = scrapy.Field()  # 收藏视频
     subscribe = scrapy.Field()  # 订阅番剧
@@ -62,9 +62,8 @@ class UserItem(BilibiliItem):
 
 
 """
-视频数据
-数据源1: http://m.bilibili.com/video/av{AID}.html
-数据源2: https://api.bilibili.com/x/web-interface/archive/stat?aid={AID}
+Data source1: http://m.bilibili.com/video/av{AID}.html
+Data source2: https://api.bilibili.com/x/web-interface/archive/stat?aid={AID}
 """
 class VideoItem(BilibiliItem):
 
@@ -80,7 +79,7 @@ class VideoItem(BilibiliItem):
     tags = scrapy.Field()  # 标签
     typeid = scrapy.Field()  # 类别ID
     typename = scrapy.Field()  # 类别
-    # totalpage = scrapy.Field()  # 页数
+    totalpage = scrapy.Field()  # 页数
     # litpic = scrapy.Field()  # 封面
 
     view = scrapy.Field()  # 浏览数
@@ -99,8 +98,7 @@ class VideoItem(BilibiliItem):
 
 
 """
-弹幕数据
-数据源: https://comment.bilibili.com/{CID}.xml
+Data source: https://comment.bilibili.com/{CID}.xml
 """
 class DanmakuItem(BilibiliItem):
 
@@ -121,8 +119,7 @@ class DanmakuItem(BilibiliItem):
 
 
 """
-番剧数据
-数据源: http://bangumi.bilibili.com/jsonp/seasoninfo/{sid}.ver?
+Data source: http://bangumi.bilibili.com/jsonp/seasoninfo/{sid}.ver?
 """
 class BangumiItem(BilibiliItem):
 

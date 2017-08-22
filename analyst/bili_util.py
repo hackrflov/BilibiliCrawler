@@ -10,7 +10,8 @@
 
 
 from pymongo import MongoClient
-from pprint import pprint
+from datetime import datetime
+import random
 
 client = MongoClient()
 db = client.bilibili
@@ -20,13 +21,11 @@ class BiliUtil():
     clt_name = ''
 
     def list(self):
-        list_str =  """\
-type '$ python user.py [func name]' with func names from following list:
-- find_by_field
-- sort_by_key
-- count_by_key
-"""
-        print list_str
+        print "type '$ python user.py [func name]' with func names from following list:"
+        for name in dir(self):
+            if name not in dir(BiliUtil): # don't list func in BiliUtil
+                print '-', name
+        print '+', 'find_by_rand'
 
     def find_by_field(self, key=''):
         if key == '':
@@ -35,8 +34,9 @@ type '$ python user.py [func name]' with func names from following list:
             docs = db[self.clt_name].find({}, {key:1}).limit(10)
         self.show(docs)
 
-    def find(self):
-        self.find_by_field()
+    def find_by_rand(self):
+        docs = db[self.clt_name].aggregate([ { '$sample' : { 'size' : 10 } } ])
+        self.show(docs)
 
     def sort_by_key(self, key):
         docs = db[self.clt_name].find().sort(key,-1).limit(10)
@@ -55,4 +55,21 @@ type '$ python user.py [func name]' with func names from following list:
     """
     def show(self, docs):
         for doc in docs:
-            pprint(doc)
+            print '{'
+            sorted_items = sorted(doc.items(), key=lambda t: t[0])
+            for (key, value) in sorted_items:
+                print '    ', key, ':',
+                if type(value) == list:
+                    print '[',
+                    for v in value:
+                        print v, ',',
+                    print '],'
+                elif type(value) == int:
+                    dt = datetime.fromtimestamp(value)
+                    if dt.year >= 2000:
+                        print dt.strftime('%Y-%m-%d %H:%M'), ','
+                    else:
+                        print value, ','
+                else:
+                    print value, ','
+            print '}'

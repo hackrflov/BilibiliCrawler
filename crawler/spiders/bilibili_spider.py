@@ -47,15 +47,17 @@ class BilibiliSpider(scrapy.Spider):
 
         # use cmd input to fetch specific data
         clt = self.collection
-        FETCH_LIMIT = 1000000
+        FETCH_LIMIT = 10000000
 
         # Fetch for user
         if clt in ['user','']:
             for i in range(FETCH_LIMIT):
                 mid = 1 + i
-                url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+                #mid = 871257 + i  # last record
+                #url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+                url = 'https://app.bilibili.com/x/v2/space?vmid={}&build=1&ps=1'.format(mid)
                 request = scrapy.Request(url=url, callback=self.parse_user_seed)
-                request.meta['force_proxy'] = True
+                #request.meta['force_proxy'] = True
                 request.meta['mid'] = mid
                 yield request
 
@@ -63,8 +65,9 @@ class BilibiliSpider(scrapy.Spider):
         if clt in ['video','']:
             for i in range(FETCH_LIMIT):
                 #aid = 1 + i
-                aid = 809014 + i  # last record
-                url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
+                aid = 937686 + i  # last record
+                #url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
+                url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
                 request = scrapy.Request(url=url, callback=self.parse_video_seed)
                 request.meta['aid'] = aid
                 yield request
@@ -89,15 +92,31 @@ class BilibiliSpider(scrapy.Spider):
 
 
     def parse_user_seed(self, response):
-        raw = json.loads(response.body)
-        data = raw['data']['card']
+        data = json.loads(response.body)['data']
+
+        # user card
+        data = data['card']
         data['mid'] = int(data['mid'])  # change to int
         data['level'] = data['level_info']['current_level']
         data['nameplate'] = data['nameplate']['name']
+
+        # live & fav & tag & seanson & game
+        if 'favourate' in data:
+            f = data['favourate']
+            data['fav'] = f['count']
+            data['favs'] = [item['fid'] for item in f['item']]
+        if 'tags' in data:
+            data['tags'] = [tag['tag_name'] for tag in data['tags']]
+
+        data['roomid']  = data['live'].get('roomid')  if 'live'   in data else ''
+        data['game']    = data['game'].get('count')   if 'game'   in data else ''
+        data['seanson'] = data['season'].get('count') if 'season' in data else ''
+
         user = UserItem()
         user.fill(data)
         yield user
 
+        """
         # next request - detail
         mid = response.meta['mid']
         url = 'https://space.bilibili.com/ajax/member/GetInfo'
@@ -117,7 +136,39 @@ class BilibiliSpider(scrapy.Spider):
         request = scrapy.Request(url=url, callback=self.parse_user_subscribe)
         request.meta['mid'] = mid
         yield request
+        """
 
+
+    def parse_video_seed(self, response):
+
+        # parse html
+        raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
+        wrap = json.loads(raw)
+        data = wrap['videoReducer']
+
+        # extract tag list
+        if 'videoTag' in wrap:
+            tag_wrap = wrap['videoTag'].replace('\\"','"')  # delete all blackslash
+            tags = json.loads(tag_wrap)['data']
+            for i, tag in enumerate(tags):
+                tags[i] = tag['tag_name']
+            data['tags'] = tags
+
+        # yield item
+        video = VideoItem()
+        video.fill(data)
+        yield video
+
+        # next request: video stat
+        stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
+        yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
+
+
+    def parse_video_stat(self, response):
+        data = json.loads(response.body)['data']
+        video = VideoItem()
+        video.fill(data)
+        yield video
 
     def parse_user_detail(self, response):
         data = json.loads(response.body)['data']
@@ -140,7 +191,6 @@ class BilibiliSpider(scrapy.Spider):
                 request = scrapy.Request(url=url, callback=self.parse_user_fav)
                 request.meta['mid'] = mid
                 yield request
-
 
     def parse_user_fav(self, response):
         data = json.loads(response.body)['data']['archives']
@@ -181,53 +231,6 @@ class BilibiliSpider(scrapy.Spider):
         request.meta['pn'] = pn
         yield request
 
-
-    def parse_video_seed(self, response):
-
-        data = json.loads(response.body)[0]
-        cid = data['cid']
-
-        # next request: video detail
-        aid = response.meta['aid']
-        detail_url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
-        request = scrapy.Request(url=detail_url, callback=self.parse_video_detail)
-        request.meta['cid'] = cid
-        yield request
-
-        # next request: video stat
-        stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
-        yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
-
-
-    def parse_video_stat(self, response):
-        data = json.loads(response.body)['data']
-        video = VideoItem()
-        video.fill(data)
-        yield video
-
-
-    def parse_video_detail(self, response):
-
-        # parse html
-        raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
-        wrap = json.loads(raw)
-        data = wrap['videoReducer']
-        data['cid'] = response.meta['cid']
-
-        # extract tag list
-        if 'videoTag' in wrap:
-            tag_wrap = wrap['videoTag'].replace('\\"','"')  # delete all blackslash
-            tags = json.loads(tag_wrap)['data']
-            for i, tag in enumerate(tags):
-                tags[i] = tag['tag_name']
-            data['tags'] = tags
-
-        # yield item
-        video = VideoItem()
-        video.fill(data)
-        yield video
-
-
     def parse_danmaku_seed(self, response):
         cid = response.meta['cid']
         data = response.body
@@ -244,7 +247,6 @@ class BilibiliSpider(scrapy.Spider):
                 request = scrapy.Request(url=url, callback=self.parse_danmaku)
                 request.meta['cid'] = cid
                 yield request
-
 
     def parse_danmaku(self, response):
         data = response.xpath('//d')

@@ -10,5 +10,9 @@ A powerful crawler with analyzing tools designed to dig out interesting data fro
 ## Install
 > pip install -r requirements.txt
 
-## How to use
+## How to crawl
 > python launch.py
+
+## How to analyze
+> cd analyst
+> python user.py
