@@ -50,6 +50,13 @@ class UserItem(BilibiliItem):
     attention = scrapy.Field()  # 关注数
     level = scrapy.Field()  # 等级
     nameplate = scrapy.Field()  # 勋章
+    archive = scrapy.Field() # 投稿数
+    roomid = scrapy.Field() # 直播间
+    game = scrapy.Field() # 游戏数
+    season = scrapy.Field()  # 订阅番剧数
+    fav = scrapy.Field()  # 收藏视频数
+    tags = scrapy.Field()  # 订阅标签列表
+
     # coins = scrapy.Field()  # 硬币数
     # playNum = scrapy.Field()  # 播放数
 

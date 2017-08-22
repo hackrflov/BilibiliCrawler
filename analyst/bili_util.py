@@ -19,6 +19,7 @@ db = client.bilibili
 class BiliUtil():
 
     clt_name = ''
+    db = db
 
     def list(self):
         print "type '$ python user.py [func name]' with func names from following list:"
@@ -27,16 +28,36 @@ class BiliUtil():
                 print '-', name
         print '+', 'find_by_rand'
 
-    def find_by_field(self, key=''):
+    def find_by_field(self, key='', value=''):
         if key == '':
-            docs = db[self.clt_name].find().limit(10)
+            docs = db[self.clt_name].aggregate([
+                { '$sample' : { 'size' : 10 } }
+            ])
+        elif value == '':
+            docs = db[self.clt_name].aggregate([
+                { '$project' : { key : 1 } },
+                { '$sample' : { 'size' : 10 } }
+            ])
+        elif type(value) != list:
+            docs = db[self.clt_name].aggregate([
+                { '$match' : { key : value } },
+                { '$sample' : { 'size' : 10 } }
+            ])
         else:
-            docs = db[self.clt_name].find({}, {key:1}).limit(10)
+            docs = db[self.clt_name].aggregate([
+                { '$match' : { key : { '$in' : value } } },
+                { '$sample' : { 'size' : 10 } },
+            ])
         self.show(docs)
 
     def find_by_rand(self):
+        self.find_by_field()
+
+    def join_rand(self, clt, key):
         docs = db[self.clt_name].aggregate([ { '$sample' : { 'size' : 10 } } ])
-        self.show(docs)
+        for doc in docs:
+            join_doc = db[clt].find({ key : doc[key] })
+            self.show(join_doc)
 
     def sort_by_key(self, key):
         docs = db[self.clt_name].find().sort(key,-1).limit(10)

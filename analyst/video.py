@@ -51,11 +51,33 @@ class Video(BiliUtil):
     def count_by_toptype(self):
         self.count_by_key('toptype')
 
+    def find_by_tag(self, tag):
+        self.find_by_field('tags', [tag])
+
+    def join_with_user(self):
+        docs = self.db[self.clt_name].aggregate([
+            { '$sample' : { 'size' : 10 } },
+            { '$lookup' :
+                { 'from' : 'user',
+                  'localField' : 'mid',
+                  'foreignField' : 'mid',
+                  'as' : 'author'
+                }
+            },
+            { '$limit' : 10 }
+        ])
+        self.show(docs)
+
 if __name__ == '__main__':
     video = Video()
     if len(sys.argv) >= 2:
         func_name = sys.argv[1]
-        getattr(video, func_name)()
+        if len(sys.argv) == 3:
+            getattr(video, func_name)(sys.argv[2])
+        elif len(sys.argv) >= 4:
+            getattr(video, func_name)(sys.argv[2],sys.argv[3])
+        else:
+            getattr(video, func_name)()
     else:
         video.list()
 

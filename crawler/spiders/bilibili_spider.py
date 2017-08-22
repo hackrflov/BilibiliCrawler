@@ -27,9 +27,10 @@ class BilibiliSpider(scrapy.Spider):
 
     name = 'bilibili'
 
-    def __init__(self, collection='', *args, **kwargs):
+    def __init__(self, collection='', start_num=1, *args, **kwargs):
         super(BilibiliSpider, self).__init__(*args, **kwargs)
         self.collection = collection
+        self.start_num = int(start_num)
 
     """
     method: delete all existing data
@@ -52,7 +53,7 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for user
         if clt in ['user','']:
             for i in range(FETCH_LIMIT):
-                mid = 1 + i
+                mid = self.start_num + i
                 #mid = 871257 + i  # last record
                 #url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
                 url = 'https://app.bilibili.com/x/v2/space?vmid={}&build=1&ps=1'.format(mid)
@@ -64,8 +65,7 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for video
         if clt in ['video','']:
             for i in range(FETCH_LIMIT):
-                #aid = 1 + i
-                aid = 937686 + i  # last record
+                aid = self.start_num + i
                 #url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
                 url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
                 request = scrapy.Request(url=url, callback=self.parse_video_seed)
@@ -92,25 +92,26 @@ class BilibiliSpider(scrapy.Spider):
 
 
     def parse_user_seed(self, response):
-        data = json.loads(response.body)['data']
+        raw = json.loads(response.body)['data']
 
         # user card
-        data = data['card']
+        data = raw['card']
         data['mid'] = int(data['mid'])  # change to int
         data['level'] = data['level_info']['current_level']
         data['nameplate'] = data['nameplate']['name']
 
         # live & fav & tag & seanson & game
-        if 'favourate' in data:
-            f = data['favourate']
+        if 'favourite' in raw:
+            f = raw['favourite']
             data['fav'] = f['count']
             data['favs'] = [item['fid'] for item in f['item']]
-        if 'tags' in data:
-            data['tags'] = [tag['tag_name'] for tag in data['tags']]
+        if 'tag' in raw:
+            data['tags'] = [tag['tag_name'] for tag in raw['tag']]
 
-        data['roomid']  = data['live'].get('roomid')  if 'live'   in data else ''
-        data['game']    = data['game'].get('count')   if 'game'   in data else ''
-        data['seanson'] = data['season'].get('count') if 'season' in data else ''
+        data['roomid']  = raw['live'].get('roomid')   if 'live'    in raw else ''
+        data['game']    = raw['game'].get('count')    if 'game'    in raw else ''
+        data['season'] = raw['season'].get('count')  if 'season'  in raw else ''
+        data['archive'] = raw['archive'].get('count') if 'archive' in raw else ''
 
         user = UserItem()
         user.fill(data)
