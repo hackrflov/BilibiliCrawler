@@ -18,7 +18,6 @@ from scrapy import selector, signals
 import requests
 import pymongo
 from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
-from tenacity import retry
 import logging
 log = logging.getLogger('scrapy.spider')
 
@@ -75,7 +74,7 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for danmaku
         if clt in ['danmaku','']:
             for i in range(FETCH_LIMIT):
-                cid = 1 + i
+                cid = self.start_num + i
                 danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
                 request = scrapy.Request(url=danmaku_url, callback=self.parse_danmaku_seed)
                 request.meta['cid'] = cid
@@ -84,7 +83,7 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for bangumi
         if clt in ['bangumi','']:
             for i in range(FETCH_LIMIT):
-                sid = 1 + i
+                sid = self.start_num + i
                 url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid)
                 request = scrapy.Request(url=url, callback=self.parse_bangumi)
                 request.meta['sid'] = sid
@@ -146,6 +145,7 @@ class BilibiliSpider(scrapy.Spider):
         raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
         wrap = json.loads(raw)
         data = wrap['videoReducer']
+        aid = data['aid']
 
         # extract tag list
         if 'videoTag' in wrap:

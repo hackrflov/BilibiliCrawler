@@ -12,7 +12,17 @@ A powerful crawler with analyzing tools designed to dig out interesting data fro
 
 ## How to crawl
 > python launch.py
+You can crawl specific data, e.g. user
+> python launch.py user
+You can go further - start with certain number, e.g. aid
+> python launch.py video 1234321
+To fullly use your CPU, you can run multiple spider at the same time
+> python launch.py user
+> python launch.py video
+> python launch.py danmaku
 
 ## How to analyze
 > cd analyst
 > python user.py
+type functions showed within instruction
+> python video.py sort_by_toptype

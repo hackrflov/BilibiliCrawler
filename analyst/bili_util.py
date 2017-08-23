@@ -59,8 +59,8 @@ class BiliUtil():
             join_doc = db[clt].find({ key : doc[key] })
             self.show(join_doc)
 
-    def sort_by_key(self, key):
-        docs = db[self.clt_name].find().sort(key,-1).limit(10)
+    def sort_by_key(self, key, limit=10):
+        docs = db[self.clt_name].find().sort(key,-1).limit(limit)
         self.show(docs)
 
     def count_by_key(self, key):

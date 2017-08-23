@@ -24,8 +24,8 @@ class Video(BiliUtil):
 
     clt_name = 'video'
 
-    def sort_by_aid(self):
-        self.sort_by_key('aid')
+    def sort_by_aid(self, limit=10):
+        self.sort_by_key('aid', int(limit))
 
     def sort_by_coin(self):
         self.sort_by_key('coin')

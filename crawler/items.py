@@ -111,12 +111,12 @@ class DanmakuItem(BilibiliItem):
 
     cid = scrapy.Field()  # 视频ID
     playTime = scrapy.Field()  # 时间
-    mode = scrapy.Field()  # 模式
-    fontsize = scrapy.Field()  # 字体大小
-    color = scrapy.Field()  # 颜色
+    #mode = scrapy.Field()  # 模式
+    #fontsize = scrapy.Field()  # 字体大小
+    #color = scrapy.Field()  # 颜色
     timestamp = scrapy.Field()  # 时间戳
-    pool = scrapy.Field()  # 弹幕池
-    hashID = scrapy.Field()  # 用户ID
+    #pool = scrapy.Field()  # 弹幕池
+    #hashID = scrapy.Field()  # 用户ID
     uid = scrapy.Field()  # 弹幕ID
     msg = scrapy.Field()  # 文本
 

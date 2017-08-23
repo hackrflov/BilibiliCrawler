@@ -16,8 +16,11 @@ class User(BiliUtil):
 
     clt_name = 'user'
 
-    def sort_by_playNum(self):
-        self.sort_by_key('playNum')
+    def sort_by_fans(self):
+        self.sort_by_key('fans')
+
+    def sort_by_attention(self):
+        self.sort_by_key('attention')
 
     def sort_by_mid(self):
         self.sort_by_key('mid')
@@ -39,6 +42,16 @@ class User(BiliUtil):
 
     def count_by_nameplate(self):
         self.count_by_key('nameplate')
+
+    def count_by_year(self):
+        docs = self.db[self.clt_name].aggregate([
+            { '$match' : { 'birthday' : { '$ne' : '' } } },
+            { '$project' : { 'birthday' : { '$substrBytes' : [ '$birthday', 0, 4 ] } } },
+            { '$group': { '_id': '$birthday',
+                          'count': { '$sum' : 1 } } },
+            { '$sort' : { 'count' : -1 } }
+        ])
+        self.show(docs)
 
     # Twelve constellations
     def count_by_sign(self):
