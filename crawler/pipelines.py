@@ -24,10 +24,26 @@ class BilibiliPipeline(object):
     # settings
     OP_LIMIT_SIZE = 100
 
-    def __init__(self):
+    @classmethod
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
+        return cls(settings)
+
+    def __init__(self, settings):
         self.operations = {}  # for bulk write
-        client = MongoClient()
-        self.db = client.bilibili
+        host = settings.get('MONGO_HOST')
+        db = settings.get('MONGO_DB')
+        usr = settings.get('MONGO_USERNAME')
+        pwd = settings.get('MONGO_PASSWORD')
+        if usr and pwd:
+            uri = 'mongodb://{u}:{p}@{h}/{d}'.format(u=usr,p=pwd,h=host,d=db)
+        elif host:
+            uri = 'mongodb://{h}/{d}'.format(h=host,d=db)
+        else:  # local as default
+            uri = None
+        client = MongoClient(uri)
+        self.db = client[db]
+
 
     def process_item(self, item, spider):
 

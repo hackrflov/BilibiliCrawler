@@ -75,8 +75,9 @@ class BilibiliSpider(scrapy.Spider):
         if clt in ['danmaku','']:
             for i in range(FETCH_LIMIT):
                 cid = self.start_num + i
-                danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
-                request = scrapy.Request(url=danmaku_url, callback=self.parse_danmaku_seed)
+                #danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
+                url = 'http://comment.bilibili.com/{}.xml'.format(cid)
+                request = scrapy.Request(url=url, callback=self.parse_danmaku)
                 request.meta['cid'] = cid
                 yield request
 
@@ -88,7 +89,6 @@ class BilibiliSpider(scrapy.Spider):
                 request = scrapy.Request(url=url, callback=self.parse_bangumi)
                 request.meta['sid'] = sid
                 yield request
-
 
     def parse_user_seed(self, response):
         raw = json.loads(response.body)['data']

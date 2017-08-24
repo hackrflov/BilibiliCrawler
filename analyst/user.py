@@ -22,8 +22,8 @@ class User(BiliUtil):
     def sort_by_attention(self):
         self.sort_by_key('attention')
 
-    def sort_by_mid(self):
-        self.sort_by_key('mid')
+    def sort_by_mid(self, limit=10):
+        self.sort_by_key('mid', int(limit))
 
     def sort_by_attention(self):
         self.sort_by_key('attention')
