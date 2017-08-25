@@ -11,6 +11,7 @@ A powerful crawler with analyzing tools designed to dig out interesting data fro
 > pip install -r requirements.txt
 
 ## How to crawl
+## Get started
 > python launch.py
 You can crawl specific data, e.g. user
 > python launch.py user

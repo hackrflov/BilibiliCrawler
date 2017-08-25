@@ -8,63 +8,37 @@
     Python Version: 2.7
 """
 
-import sys
 import re
 import json
-import pdb
-
-import scrapy
-from scrapy import selector, signals
-import requests
-import pymongo
-from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
 import logging
 log = logging.getLogger('scrapy.spider')
 
+import scrapy
+import requests
+from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
 
 class BilibiliSpider(scrapy.Spider):
 
     name = 'bilibili'
 
-    def __init__(self, collection='', start_num=1, *args, **kwargs):
+    def __init__(self, target='', start=1, end=10000000, *args, **kwargs):
         super(BilibiliSpider, self).__init__(*args, **kwargs)
-        self.collection = collection
-        self.start_num = int(start_num)
-
-    """
-    method: delete all existing data
-    """
-    def clear_db(self):
-        client = pymongo.MongoClient()
-        db = client.bilibili
-        #db.user.delete_many({})
-        #db.video.delete_many({})
-        #db.danmaku.delete_many({})
+        self.clt = target
+        self.sn = int(start)
+        self.en = int(end)
 
     def start_requests(self):
-        # Uncomment to crawl totally fresh
-        # self.clear_db()
-
-        # use cmd input to fetch specific data
-        clt = self.collection
-        FETCH_LIMIT = 10000000
 
         # Fetch for user
-        if clt in ['user','']:
-            for i in range(FETCH_LIMIT):
-                mid = self.start_num + i
-                #mid = 871257 + i  # last record
-                #url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+        if self.clt in ['user','']:
+            for mid in range(self.sn, self.en):
                 url = 'https://app.bilibili.com/x/v2/space?vmid={}&build=1&ps=1'.format(mid)
                 request = scrapy.Request(url=url, callback=self.parse_user_seed)
-                #request.meta['force_proxy'] = True
-                request.meta['mid'] = mid
                 yield request
 
         # Fetch for video
-        if clt in ['video','']:
-            for i in range(FETCH_LIMIT):
-                aid = self.start_num + i
+        if self.clt in ['video','']:
+            for aid in range(self.sn, self.en):
                 #url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
                 url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
                 request = scrapy.Request(url=url, callback=self.parse_video_seed)
@@ -72,9 +46,8 @@ class BilibiliSpider(scrapy.Spider):
                 yield request
 
         # Fetch for danmaku
-        if clt in ['danmaku','']:
-            for i in range(FETCH_LIMIT):
-                cid = self.start_num + i
+        if self.clt in ['danmaku','']:
+            for cid in range(self.sn, self.en):
                 #danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
                 url = 'http://comment.bilibili.com/{}.xml'.format(cid)
                 request = scrapy.Request(url=url, callback=self.parse_danmaku)
@@ -82,62 +55,187 @@ class BilibiliSpider(scrapy.Spider):
                 yield request
 
         # Fetch for bangumi
-        if clt in ['bangumi','']:
-            for i in range(FETCH_LIMIT):
-                sid = self.start_num + i
+        if self.clt in ['bangumi','']:
+            for sid in range(self.sn, self.en):
                 url = 'http://bangumi.bilibili.com/jsonp/seasoninfo/{}.ver?'.format(sid)
                 request = scrapy.Request(url=url, callback=self.parse_bangumi)
                 request.meta['sid'] = sid
                 yield request
+
+    #==================== USER PART ====================#
 
     def parse_user_seed(self, response):
         raw = json.loads(response.body)['data']
 
         # user card
         data = raw['card']
-        data['mid'] = int(data['mid'])  # change to int
+        mid = int(data['mid'])
+        data['mid'] = mid
+        data['vip'] = data['vip']['vipType']
         data['level'] = data['level_info']['current_level']
         data['nameplate'] = data['nameplate']['name']
 
-        # live & fav & tag & seanson & game
-        if 'favourite' in raw:
-            f = raw['favourite']
-            data['fav'] = f['count']
-            data['favs'] = [item['fid'] for item in f['item']]
+        # elec & live & article
+        data['elec'] = raw['elec'].get('total') if 'elec' in raw else ''
+        data['live'] = raw['live'].get('roomid') if 'live' in raw else ''
+        data['article'] = raw['archive'].get('count') if 'archive' in raw else ''
+        data['setting'] = raw['setting']
+
+        # atttentions
+        if data['attention'] > 0:
+            url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+            request = scrapy.Request(url=url, callback=self.parse_user_attentions)
+            request.meta['mid'] = mid
+            yield request
+
+        # favourite
+        tab = raw.get('favourite')
+        if tab:
+            data['folder'] = [t['fid'] for t in tab['item']]
+            for fid in data['folder']:
+                url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
+                request = scrapy.Request(url=url, callback=self.parse_user_favorite)
+                request.meta['mid'] = mid
+                request.meta['fid'] = fid
+                request.meta['pn'] = 1
+                yield request
+        elif raw['setting']['fav_video'] == 0:
+            url = 'https://api.bilibili.com/x/v2/fav/folder?vmid={}'.format(mid)
+            request = scrapy.Request(url=url, callback=self.parse_user_folder)
+            request.meta['mid'] = mid
+            yield request
+
+        # community
+        tab = raw.get('community')
+        if tab:
+            if tab['count'] <= 20:
+                data['community'] = [t['id'] for t in tab['item']]
+            else:
+                url = 'https://app.bilibili.com/x/v2/space/community?vmid={}'.format(mid)
+                request = scrapy.Request(url=url, callback=self.parse_user_community)
+                request.meta['mid'] = mid
+                request.meta['pn'] = 1
+                yield request
+
+        # bangumi
+        tab = raw.get('season')
+        if tab:
+            if tab['count'] <= 20:
+                data['bangumi'] = [ int(t['param']) for t in tab['item']]
+            else:
+                url = 'https://app.bilibili.com/x/v2/space/bangumi?vmid={}'.format(mid)
+                request = scrapy.Request(url=url, callback=self.parse_user_bangumi)
+                request.meta['mid'] = mid
+                request.meta['pn'] = 1
+                yield request
+
+        # tag
         if 'tag' in raw:
-            data['tags'] = [tag['tag_name'] for tag in raw['tag']]
+            url = 'https://space.bilibili.com/ajax/tags/getSubList?mid={}'.format(mid)
+            request = scrapy.Request(url=url, callback=self.parse_user_tag)
+            request.meta['mid'] = mid
+            yield request
 
-        data['roomid']  = raw['live'].get('roomid')   if 'live'    in raw else ''
-        data['game']    = raw['game'].get('count')    if 'game'    in raw else ''
-        data['season'] = raw['season'].get('count')  if 'season'  in raw else ''
-        data['archive'] = raw['archive'].get('count') if 'archive' in raw else ''
+        # game
+        tab = raw.get('game')
+        if tab:
+            data['game'] = [t['id'] for t in tab['item']]
 
+        # yield item
         user = UserItem()
         user.fill(data)
         yield user
 
-        """
-        # next request - detail
+    def parse_user_attentions(self, response):
+        data = json.loads(response.body)['data']['card']
         mid = response.meta['mid']
-        url = 'https://space.bilibili.com/ajax/member/GetInfo'
-        request = scrapy.FormRequest(url=url, formdata={'mid':str(mid)}, callback=self.parse_user_detail)
-        request.meta['mid'] = mid
-        yield request
+        user = UserItem({ 'mid': mid, 'attentions': data['attentions'] })
+        yield user
 
-        # next request - favorates
+    def parse_user_folder(self, response):
+        data = json.loads(response.body)['data']
+        flds  = [ { 'id':t['fid'], 'name':t['name'] } for t in data]
         mid = response.meta['mid']
-        url = 'https://api.bilibili.com/x/v2/fav/folder?vmid={}'.format(mid)
-        request = scrapy.Request(url=url, callback=self.parse_user_fav_seed)
-        request.meta['mid'] = mid
-        yield request
+        user = UserItem({ 'mid': mid, 'folder': flds })
+        yield user
 
-        # next request - Bangumi
-        url = 'https://space.bilibili.com/ajax/Bangumi/getList?mid={}'.format(mid)
-        request = scrapy.Request(url=url, callback=self.parse_user_subscribe)
-        request.meta['mid'] = mid
-        yield request
-        """
+        # crawl videos inside each folder
+        for fid in flds:
+            url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
+            request = scrapy.Request(url=url, callback=self.parse_user_favorite)
+            request.meta['mid'] = mid
+            request.meta['fid'] = fid
+            request.meta['pn'] = 1
+            yield request
 
+    def parse_user_favorite(self, response):
+        data = json.loads(response.body)['data']
+        favs = [ { 'id':t['aid'], 'ts':t['fav_at'] } for t in data['archives'] ]  # aid & time pair
+        mid = response.meta['mid']
+        user = UserItem({ 'mid': mid, 'favorite': favs }, item_type='append' )
+        yield user
+
+        # crawl next page
+        fid = response.meta['fid']
+        pn = response.meta['pn']
+        ps = 30
+        total = data['total']
+        if pn * ps < total:
+            next_pn = pn + 1
+            url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}&pn={p}'.format(m=mid, f=fid, p=next_pn)
+            request = scrapy.Request(url=url, callback=self.parse_user_favorite)
+            request.meta['mid'] = mid
+            request.meta['fid'] = fid
+            request.meta['pn'] = next_pn
+            yield request
+
+    def parse_user_community(self, response):
+        data = json.loads(response.body)['data']
+        cmu = [t['id'] for t in data['item']]
+        mid = response.meta['mid']
+        user = UserItem({ 'mid': mid, 'community': cmu }, item_type='append' )
+        yield user
+
+        # crawl next page
+        pn = response.meta['pn']
+        ps = 20
+        total = data['count']
+        if pn * ps < total:
+            next_pn = pn + 1
+            url = 'https://app.bilibili.com/x/v2/space/community?vmid={m}&pn={p}'.format(m=mid, p=next_pn)
+            request = scrapy.Request(url=url, callback=self.parse_user_community)
+            request.meta['mid'] = mid
+            request.meta['pn'] = next_pn
+            yield request
+
+    def parse_user_bangumi(self, response):
+        data = json.loads(response.body)['data']
+        bgm = [int(t['param']) for t in data['item']]
+        mid = response.meta['mid']
+        user = UserItem({ 'mid': mid, 'bangumi': bgm }, item_type='append' )
+        yield user
+
+        # crawl next page
+        pn = response.meta['pn']
+        ps = 20
+        total = data['count']
+        if pn * ps < total:
+            next_pn = pn + 1
+            url = 'https://app.bilibili.com/x/v2/space/bangumi?vmid={m}&pn={p}'.format(m=mid, p=next_pn)
+            request = scrapy.Request(url=url, callback=self.parse_user_bangumi)
+            request.meta['mid'] = mid
+            request.meta['pn'] = next_pn
+            yield request
+
+    def parse_user_tag(self, response):
+        data = json.loads(response.body)['data']
+        tag = [t['tag_id'] for t in data['tags']]
+        mid = response.meta['mid']
+        user = UserItem({ 'mid': mid, 'tag': tag })
+        yield user
+
+
+    #==================== VIDEO PART ====================#
 
     def parse_video_seed(self, response):
 
@@ -171,66 +269,7 @@ class BilibiliSpider(scrapy.Spider):
         video.fill(data)
         yield video
 
-    def parse_user_detail(self, response):
-        data = json.loads(response.body)['data']
-        user = UserItem()
-        user.fill({'mid':response.meta['mid'], 'playNum':data['playNum']})
-        yield user
-
-
-    def parse_user_fav_seed(self, response):
-        data = json.loads(response.body)['data']
-        mid = response.meta['mid']
-        favs = []
-        for folder in data:
-            fid = folder['fid']
-            count = folder['cur_count']
-            ps = 30
-            pages = count / ps + 1
-            for pn in range(1,pages+1):
-                url = 'https://api.bilibili.com/x/v2/fav/video?vmid={mid}&fid={fid}&pn={pn}&ps={ps}'.format(mid=mid,fid=fid,pn=pn,ps=ps)
-                request = scrapy.Request(url=url, callback=self.parse_user_fav)
-                request.meta['mid'] = mid
-                yield request
-
-    def parse_user_fav(self, response):
-        data = json.loads(response.body)['data']['archives']
-        mid = response.meta['mid']
-        favs = [f['aid'] for f in data]
-        user = UserItem()
-        user.fill({'mid':response.meta['mid'], 'favs': favs })
-        user._type = 'append'
-        yield user
-
-
-    def parse_user_subscribe(self, response):
-        raw = json.loads(response.body)
-        data = raw['data']
-        mid = response.meta['mid']
-        max_page = data['pages']
-        if max_page == 0:
-            return
-
-        subs = [f['season_id'] for f in data['result']]
-        user = UserItem()
-        user.fill({'mid': mid, 'subscribe': subs })
-        user._type = 'append'
-        yield user
-
-        # next page
-        if 'pn' in response.meta:
-            pn = response.meta['pn']
-            if pn >= max_page:
-                return
-        else:
-            pn = 1
-
-        pn = pn + 1
-        url = 'https://space.bilibili.com/ajax/Bangumi/getList?mid={mid}&pages={pn}'.format(mid=mid,pn=pn)
-        request = scrapy.Request(url=url, callback=self.parse_user_subscribe)  # call itself repeatly
-        request.meta['mid'] = mid
-        request.meta['pn'] = pn
-        yield request
+    #==================== DANMAKU PART ====================#
 
     def parse_danmaku_seed(self, response):
         cid = response.meta['cid']
@@ -270,6 +309,7 @@ class BilibiliSpider(scrapy.Spider):
                 pass
             yield dmk
 
+    #==================== BANGUMI PART ====================#
 
     def parse_bangumi(self, response):
         sid = response.meta['sid']

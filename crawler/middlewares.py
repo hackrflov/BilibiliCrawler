@@ -69,6 +69,7 @@ class RandomProxyMiddleware(object):
                 log.debug('Connect to {u} ... Using proxy <{p}>, {n} left'.format(u=request.url, p=proxy, n=len(self.proxy_list)))
 
     def process_exception(self, request, exception, spider):
+        print 'Process exception'
         if 'proxy' in request.meta:
             proxy = request.meta['proxy']
             self.remove_one(proxy)
@@ -108,7 +109,9 @@ class BilibiliSpiderMiddleware(object):
         try:
             for v in result:
                 yield v
-        except Exception as error:
-            #log.info('Handle errors when parsing <{u}>, details: {e}'.format(u=response.url, e=error))
+        except KeyError as e:
             yield None
+        except Exception as e:
+            log.error('Handle errors when parsing <{u}>, details: {e}'.format(u=response.url, e=e))
+            yield response.request
 

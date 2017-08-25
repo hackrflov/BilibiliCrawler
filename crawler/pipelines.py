@@ -12,12 +12,7 @@ import logging
 log = logging.getLogger('scrapy.pipeline')
 
 from pymongo import MongoClient, UpdateOne
-from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
-
-
-class DstPipeline(object):
-    def process_item(self, item, spider):
-        return item
+from crawler.items import *
 
 class BilibiliPipeline(object):
 
@@ -37,10 +32,8 @@ class BilibiliPipeline(object):
         pwd = settings.get('MONGO_PASSWORD')
         if usr and pwd:
             uri = 'mongodb://{u}:{p}@{h}/{d}'.format(u=usr,p=pwd,h=host,d=db)
-        elif host:
+        else:
             uri = 'mongodb://{h}/{d}'.format(h=host,d=db)
-        else:  # local as default
-            uri = None
         client = MongoClient(uri)
         self.db = client[db]
 
@@ -65,7 +58,7 @@ class BilibiliPipeline(object):
     input @clt: pymongo collection
     """
     def upsert(self, item, clt, key):
-        op = UpdateOne({ key: item[key] }, { '$set': item.valid_fields() }, upsert=True)
+        op = UpdateOne({ key: item[key] }, { '$set': dict(item) }, upsert=True)
         self.push_operation(op, clt)
 
     """
@@ -73,10 +66,9 @@ class BilibiliPipeline(object):
     input @clt: pymongo collection
     """
     def append(self, item, clt, key):
-        fields = item.valid_fields()
-        for add_key in fields.keys():
+        for (add_key, add_value) in item.items():
             if add_key != key:  # not equal to unique key
-                op = UpdateOne({ key: item[key] }, { '$addToSet': { add_key: { '$each' : item[add_key] } } } )
+                op = UpdateOne({ key: item[key] }, { '$addToSet': { add_key: { '$each' : add_value } } } )
                 self.push_operation(op, clt)
 
     """

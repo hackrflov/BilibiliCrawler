@@ -31,6 +31,12 @@ class User(BiliUtil):
     def sort_by_regtime(self):
         self.sort_by_key('regtime')
 
+    def sort_by_season(self):
+        self.sort_by_key('season')
+
+    def sort_by_fav(self):
+        self.sort_by_key('fav')
+
     def count_by_place(self):
         self.count_by_key('place')
 

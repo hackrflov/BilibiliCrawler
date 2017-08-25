@@ -11,21 +11,16 @@
 import scrapy
 
 class BilibiliItem(scrapy.Item):
+
+    def __init__(self, data={}, item_type='default'):
+        super(BilibiliItem, self).__init__()
+        self.fill(data)
+        self._type = item_type   # default: upsert ; append: add into array
+
     def fill(self, data):
-        for key, value in data.iteritems():
+        for key, value in data.items():
             if value and key in self.fields:
                 self[key] = value
-
-    def valid_fields(self):
-        fields = {}
-        for key, value in dict(self).iteritems():
-            if key[0] != '_':
-                fields[key] = value
-        return fields
-
-    # setting properties
-    _type = 'default' # default: upsert ; append: add into array
-
 
 """
 Data source1: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
@@ -38,30 +33,28 @@ class UserItem(BilibiliItem):
     mid = scrapy.Field()  # ID
     name = scrapy.Field()  # 昵称
     approve = scrapy.Field()  # 是否认证
+    description = scrapy.Field()  # 官方描述
     sex = scrapy.Field()  # 性别
-    # face = scrapy.Field()  # 头像
     regtime = scrapy.Field()  # 注册时间
-    place = scrapy.Field()  # 地区
     birthday = scrapy.Field()  # 生日
-    # sign = scrapy.Field()  # 签名
-    # description = scrapy.Field()  # 描述
+    place = scrapy.Field()  # 地区
     fans = scrapy.Field()  # 粉丝数
-    attentions = scrapy.Field()  # 关注列表 TODO
     attention = scrapy.Field()  # 关注数
     level = scrapy.Field()  # 等级
     nameplate = scrapy.Field()  # 勋章
-    archive = scrapy.Field() # 投稿数
-    roomid = scrapy.Field() # 直播间
-    game = scrapy.Field() # 游戏数
-    season = scrapy.Field()  # 订阅番剧数
-    fav = scrapy.Field()  # 收藏视频数
-    tags = scrapy.Field()  # 订阅标签列表
+    vip = scrapy.Field()  # VIP
+    article = scrapy.Field() # 投稿数
 
-    # coins = scrapy.Field()  # 硬币数
-    # playNum = scrapy.Field()  # 播放数
-
-    favs = scrapy.Field()  # 收藏视频
-    subscribe = scrapy.Field()  # 订阅番剧
+    setting = scrapy.Field() # 隐私设置
+    live = scrapy.Field() # 直播间
+    elec = scrapy.Field()  # 充电数
+    folder = scrapy.Field()  # 收藏夹  https://api.bilibili.com/x/v2/fav/folder?vmid={} -> data -> fid [no-limit]
+    favorite = scrapy.Field() # 收藏视频  https://api.bilibili.com/x/v2/fav/video?vmid={}&fid={} -> data -> archives -> aid [30/page]
+    attentions = scrapy.Field()  # 关注列表  http://api.bilibili.com/cardrich?mid={} -> data -> card -> attentions [no-limit]
+    community = scrapy.Field()  # 兴趣圈  https://app.bilibili.com/x/v2/space/community?vmid={} -> data -> item -> id [20/page]
+    bangumi = scrapy.Field()  # 订阅番剧  https://app.bilibili.com/x/v2/space/bangumi?vmid={} -> data -> item -> param [20/page]
+    tag = scrapy.Field()  # 订阅标签  https://space.bilibili.com/ajax/tags/getSubList?mid={} -> data -> tags -> tag_id [no-limit]
+    game = scrapy.Field() # 游戏
 
     # setting properties
     _unique_key = 'mid'

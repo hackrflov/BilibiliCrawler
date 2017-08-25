@@ -13,7 +13,7 @@ from pymongo import MongoClient
 from datetime import datetime
 import random
 
-client = MongoClient()
+client = MongoClient('mongodb://crawler:hackrflov@127.0.0.1/bilibili')
 db = client.bilibili
 
 class BiliUtil():
