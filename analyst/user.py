@@ -43,6 +43,10 @@ class User(BiliUtil):
     def count_by_sex(self):
         self.count_by_key('sex')
 
+    """
+    method: 按视频tag寻找收藏该类视频的用户
+    """
+
     def count_by_level(self):
         self.count_by_key('level')
 
