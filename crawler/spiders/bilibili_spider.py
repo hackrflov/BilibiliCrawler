@@ -16,6 +16,7 @@ log = logging.getLogger('scrapy.spider')
 import scrapy
 import requests
 from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
+from datetime import datetime
 
 class BilibiliSpider(scrapy.Spider):
 
@@ -74,6 +75,7 @@ class BilibiliSpider(scrapy.Spider):
         data['vip'] = data['vip']['vipType']
         data['level'] = data['level_info']['current_level']
         data['nameplate'] = data['nameplate']['name']
+        data['regtime'] = datetime.fromtimestamp(data['regtime'])
 
         # elec & live & article
         data['elec'] = raw['elec'].get('total') if 'elec' in raw else ''
@@ -229,7 +231,7 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_tag(self, response):
         data = json.loads(response.body)['data']
-        tag = [t['tag_id'] for t in data['tags']]
+        tag = [t['name'] for t in data['tags']]
         mid = response.meta['mid']
         user = UserItem({ 'mid': mid, 'tag': tag })
         yield user
@@ -243,6 +245,7 @@ class BilibiliSpider(scrapy.Spider):
         raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
         wrap = json.loads(raw)
         data = wrap['videoReducer']
+        data['pubdate'] = datetime.fromtimestamp(data['pubdate'])
         aid = data['aid']
 
         # extract tag list
@@ -260,11 +263,14 @@ class BilibiliSpider(scrapy.Spider):
 
         # next request: video stat
         stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
-        yield scrapy.Request(url=stat_url, callback=self.parse_video_stat)
+        request = scrapy.Request(url=stat_url, callback=self.parse_video_stat)
+        request.meta['aid'] = aid
+        yield request
 
 
     def parse_video_stat(self, response):
         data = json.loads(response.body)['data']
+        data['aid'] = response.meta['aid']
         video = VideoItem()
         video.fill(data)
         yield video

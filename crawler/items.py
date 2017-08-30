@@ -53,7 +53,7 @@ class UserItem(BilibiliItem):
     attentions = scrapy.Field()  # 关注列表  http://api.bilibili.com/cardrich?mid={} -> data -> card -> attentions [no-limit]
     community = scrapy.Field()  # 兴趣圈  https://app.bilibili.com/x/v2/space/community?vmid={} -> data -> item -> id [20/page]
     bangumi = scrapy.Field()  # 订阅番剧  https://app.bilibili.com/x/v2/space/bangumi?vmid={} -> data -> item -> param [20/page]
-    tag = scrapy.Field()  # 订阅标签  https://space.bilibili.com/ajax/tags/getSubList?mid={} -> data -> tags -> tag_id [no-limit]
+    tag = scrapy.Field()  # 订阅标签  https://space.bilibili.com/ajax/tags/getSubList?mid={} -> data -> tags -> name [no-limit]
     game = scrapy.Field() # 游戏
 
     # setting properties
