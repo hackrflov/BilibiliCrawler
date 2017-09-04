@@ -93,7 +93,7 @@ class BilibiliSpider(scrapy.Spider):
         # favourite
         tab = raw.get('favourite')
         if tab:
-            data['folder'] = [t['fid'] for t in tab['item']]
+            data['folder'] = [ { 'id':t['fid'], 'name':t['name'] } for t in tab['item'] ]
             for fid in data['folder']:
                 url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
                 request = scrapy.Request(url=url, callback=self.parse_user_favorite)
@@ -172,7 +172,7 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_favorite(self, response):
         data = json.loads(response.body)['data']
-        favs = [ { 'id':t['aid'], 'ts':t['fav_at'] } for t in data['archives'] ]  # aid & time pair
+        favs = [ { 'id':t['aid'], 'dt':datetime.fromtimestamp(t['fav_at']) } for t in data['archives'] ]  # aid & datetime pair
         mid = response.meta['mid']
         user = UserItem({ 'mid': mid, 'favorite': favs }, item_type='append' )
         yield user

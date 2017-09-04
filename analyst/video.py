@@ -9,11 +9,14 @@
 """
 
 import sys
+from datetime import datetime as dt
+
+import numpy as np
+from pymongo import UpdateOne
+from sklearn import linear_model, svm
+import matplotlib.pyplot as plt
 
 from bili_util import BiliUtil
-import numpy as np
-from sklearn import linear_model, svm
-
 
 class Video(BiliUtil):
 
@@ -107,7 +110,33 @@ class Video(BiliUtil):
         print reg.coef_
         print reg.predict([[int(view), int(fav), int(reply)]])
 
-
+    """
+    method: Use linear regression to predict pub amount
+    """
+    def predict_pub_amount(self):
+        docs = self.db.video.aggregate([
+            #            { '$sample' : { 'size' : 10000 } },
+            { '$match' : { 'pubdate' : { '$exists' : 1 } } },
+            { '$project' : { 'date' : { '$dateToString' :  { 'format' : '%Y-%m', 'date' : '$pubdate' } } } },
+            { '$group' : { '_id' : '$date', 'count' : { '$sum' : 1 } } },
+        ])
+        data = np.array([ doc for doc in docs])
+        data = sorted(data, key=lambda doc: doc['_id'].split('-'))
+        dx, dy = [], []
+        for doc in data:
+            (year, month) = doc['_id'].split('-')
+            date = dt(int(year), int(month), 1).strftime('%y-%m')
+            dx.append(date)
+            dy.append(doc['count'])
+        x = np.array(dx)
+        y = np.array(dy)
+        print x, y
+        N = len(x)
+        ind = np.arange(N)
+        width = 0.35
+        plt.bar(ind, y, width, align='center')
+        plt.xticks(ind, x, rotation=45)
+        plt.show()
 
 if __name__ == '__main__':
     video = Video()
