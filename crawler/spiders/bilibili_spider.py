@@ -39,7 +39,6 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for video
         if self.clt in ['video','']:
             for aid in range(self.sn, self.en):
-                #url = 'http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)
                 url = 'http://m.bilibili.com/video/av{}.html'.format(aid)
                 request = scrapy.Request(url=url, callback=self.parse_video_seed)
                 request.meta['aid'] = aid
@@ -48,7 +47,6 @@ class BilibiliSpider(scrapy.Spider):
         # Fetch for danmaku
         if self.clt in ['danmaku','']:
             for cid in range(self.sn, self.en):
-                #danmaku_url = 'http://comment.bilibili.com/rolldate,{}'.format(cid)
                 url = 'http://comment.bilibili.com/{}.xml'.format(cid)
                 request = scrapy.Request(url=url, callback=self.parse_danmaku)
                 request.meta['cid'] = cid
@@ -196,6 +194,10 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_community(self, response):
         data = json.loads(response.body)['data']
+        if not data:
+            return
+
+        # extract info
         cmu = [t['id'] for t in data['item']]
         mid = response.meta['mid']
         user = UserItem({ 'mid': mid, 'community': cmu }, item_type='append' )
@@ -215,6 +217,10 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_bangumi(self, response):
         data = json.loads(response.body)['data']
+        if not data:
+            return
+
+        # extract info
         bgm = [int(t['param']) for t in data['item']]
         mid = response.meta['mid']
         user = UserItem({ 'mid': mid, 'bangumi': bgm }, item_type='append' )

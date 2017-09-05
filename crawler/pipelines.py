@@ -19,13 +19,16 @@ class BilibiliPipeline(object):
     # settings
     OP_LIMIT_SIZE = 1000
 
+    # properties
+    operations = []  # for bulk write
+    op_size = 0
+
     @classmethod
     def from_crawler(cls, crawler):
         settings = crawler.settings
         return cls(settings)
 
     def __init__(self, settings):
-        self.operations = {}  # for bulk write
         host = settings.get('MONGO_HOST')
         db = settings.get('MONGO_DB')
         usr = settings.get('MONGO_USERNAME')
@@ -76,19 +79,13 @@ class BilibiliPipeline(object):
     input @op: one operation applied on item
     """
     def push_operation(self, op, clt):
-        op = self.operations.get(clt.name)
-        if not op:
-            op = self.operations[clt.name] = {}
-            op['reqs'] = []
-            op['count'] = 0
-
-        reqs = op['reqs']
+        reqs = self.operations
         reqs.append(op)
-        op['count'] += 1
-        if op['count'] >= self.OP_LIMIT_SIZE:
+        self.op_size += 1
+        if self.op_size >= self.OP_LIMIT_SIZE:
             self.bulk_write(clt, reqs)
-            op['reqs'] = []
-            op['count'] = 0
+            self.operations = []
+            self.op_size = 0
 
     """
     method: write multiple requests into db
