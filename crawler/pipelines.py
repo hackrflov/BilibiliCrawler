@@ -17,7 +17,7 @@ from crawler.items import *
 class BilibiliPipeline(object):
 
     # settings
-    OP_LIMIT_SIZE = 100
+    OP_LIMIT_SIZE = 1000
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -45,7 +45,7 @@ class BilibiliPipeline(object):
         key = item._unique_key
 
         # check index
-        clt.create_index(key)
+        # clt.create_index(key)
 
         # push into db in two ways
         if item._type == 'default':
@@ -76,14 +76,19 @@ class BilibiliPipeline(object):
     input @op: one operation applied on item
     """
     def push_operation(self, op, clt):
-        ops = self.operations
-        if clt.name not in ops:
-            ops[clt.name] = []
-        reqs = ops[clt.name]
+        op = self.operations.get(clt.name)
+        if not op:
+            op = self.operations[clt.name] = {}
+            op['reqs'] = []
+            op['count'] = 0
+
+        reqs = op['reqs']
         reqs.append(op)
-        if len(reqs) >= self.OP_LIMIT_SIZE:
+        op['count'] += 1
+        if op['count'] >= self.OP_LIMIT_SIZE:
             self.bulk_write(clt, reqs)
-            self.operations[clt.name] = []
+            op['reqs'] = []
+            op['count'] = 0
 
     """
     method: write multiple requests into db

@@ -48,7 +48,7 @@ class UserItem(BilibiliItem):
     setting = scrapy.Field() # 隐私设置
     live = scrapy.Field() # 直播间
     elec = scrapy.Field()  # 充电数
-    folder = scrapy.Field()  # 收藏夹  https://api.bilibili.com/x/v2/fav/folder?vmid={} -> data -> fid [no-limit]
+    folder = scrapy.Field()  # 收藏夹  http://space.bilibili.com/ajax/fav/getboxlist?mid={} -> data -> list -> fav_box [no-limit]
     favorite = scrapy.Field() # 收藏视频  https://api.bilibili.com/x/v2/fav/video?vmid={}&fid={} -> data -> archives -> aid [30/page]
     attentions = scrapy.Field()  # 关注列表  http://api.bilibili.com/cardrich?mid={} -> data -> card -> attentions [no-limit]
     community = scrapy.Field()  # 兴趣圈  https://app.bilibili.com/x/v2/space/community?vmid={} -> data -> item -> id [20/page]

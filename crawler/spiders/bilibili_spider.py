@@ -14,8 +14,7 @@ import logging
 log = logging.getLogger('scrapy.spider')
 
 import scrapy
-import requests
-from crawler.items import UserItem, VideoItem, DanmakuItem, BangumiItem
+from crawler.items import *
 from datetime import datetime
 
 class BilibiliSpider(scrapy.Spider):
@@ -66,7 +65,9 @@ class BilibiliSpider(scrapy.Spider):
     #==================== USER PART ====================#
 
     def parse_user_seed(self, response):
-        raw = json.loads(response.body)['data']
+        raw = json.loads(response.body).get('data')
+        if not raw:
+            return
 
         # user card
         data = raw['card']
@@ -75,7 +76,6 @@ class BilibiliSpider(scrapy.Spider):
         data['vip'] = data['vip']['vipType']
         data['level'] = data['level_info']['current_level']
         data['nameplate'] = data['nameplate']['name']
-        data['regtime'] = datetime.fromtimestamp(data['regtime'])
 
         # elec & live & article
         data['elec'] = raw['elec'].get('total') if 'elec' in raw else ''
@@ -94,7 +94,8 @@ class BilibiliSpider(scrapy.Spider):
         tab = raw.get('favourite')
         if tab:
             data['folder'] = [ { 'id':t['fid'], 'name':t['name'] } for t in tab['item'] ]
-            for fid in data['folder']:
+            for f in data['folder']:
+                fid = f['id']
                 url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
                 request = scrapy.Request(url=url, callback=self.parse_user_favorite)
                 request.meta['mid'] = mid
@@ -102,7 +103,7 @@ class BilibiliSpider(scrapy.Spider):
                 request.meta['pn'] = 1
                 yield request
         elif raw['setting']['fav_video'] == 0:
-            url = 'https://api.bilibili.com/x/v2/fav/folder?vmid={}'.format(mid)
+            url = 'http://space.bilibili.com/ajax/fav/getboxlist?mid={}'.format(mid)
             request = scrapy.Request(url=url, callback=self.parse_user_folder)
             request.meta['mid'] = mid
             yield request
@@ -150,19 +151,21 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_attentions(self, response):
         data = json.loads(response.body)['data']['card']
+        regtime = datetime.fromtimestamp(data['regtime'])
         mid = response.meta['mid']
-        user = UserItem({ 'mid': mid, 'attentions': data['attentions'] })
+        user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime })
         yield user
 
     def parse_user_folder(self, response):
-        data = json.loads(response.body)['data']
-        flds  = [ { 'id':t['fid'], 'name':t['name'] } for t in data]
+        data = json.loads(response.body)['data']['list']
+        flds  = [ { 'id':t['fav_box'], 'name':t['name'] } for t in data ]
         mid = response.meta['mid']
         user = UserItem({ 'mid': mid, 'folder': flds })
         yield user
 
         # crawl videos inside each folder
-        for fid in flds:
+        for f in flds:
+            fid = f['id']
             url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
             request = scrapy.Request(url=url, callback=self.parse_user_favorite)
             request.meta['mid'] = mid
