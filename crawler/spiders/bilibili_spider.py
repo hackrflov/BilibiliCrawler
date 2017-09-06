@@ -79,7 +79,9 @@ class BilibiliSpider(scrapy.Spider):
         data['elec'] = raw['elec'].get('total') if 'elec' in raw else ''
         data['live'] = raw['live'].get('roomid') if 'live' in raw else ''
         data['article'] = raw['archive'].get('count') if 'archive' in raw else ''
-        data['setting'] = raw['setting']
+        data['setting'] = { k: v for k, v in raw['setting'].iteritems() if v == 0 }
+
+        print data
 
         # atttentions
         if data['attention'] > 0:
@@ -131,7 +133,8 @@ class BilibiliSpider(scrapy.Spider):
                 yield request
 
         # tag
-        if 'tag' in raw:
+        tab = raw.get('tab')
+        if tab:
             url = 'https://space.bilibili.com/ajax/tags/getSubList?mid={}'.format(mid)
             request = scrapy.Request(url=url, callback=self.parse_user_tag)
             request.meta['mid'] = mid
@@ -254,12 +257,14 @@ class BilibiliSpider(scrapy.Spider):
         raw = re.search('(?<=STATE__ = ).*?(?=;\n</script>)', response.body).group()
         wrap = json.loads(raw)
         data = wrap['videoReducer']
+        if 'aid' not in data:
+            return
         data['pubdate'] = datetime.fromtimestamp(data['pubdate'])
         aid = data['aid']
 
         # extract tag list
         if 'videoTag' in wrap:
-            tag_wrap = wrap['videoTag'].replace('\\"','"')  # delete all blackslash
+            tag_wrap = wrap['videoTag']
             tags = json.loads(tag_wrap)['data']
             for i, tag in enumerate(tags):
                 tags[i] = tag['tag_name']
@@ -331,10 +336,7 @@ class BilibiliSpider(scrapy.Spider):
         raw = re.search('(?<=seasonListCallback\().*?(?=\);)', response.body).group()
         data = json.loads(raw)['result']
         data['sid'] = sid
-        tags = []
-        for t in data['tags']:
-            tags.append(t['tag_name'])
-        data['tags'] = tags
+        data['tags'] = [ t['tag_name'] for t in data['tags'] ]
 
         # yield item
         bangumi = BangumiItem()
