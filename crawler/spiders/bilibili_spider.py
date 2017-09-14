@@ -10,6 +10,7 @@
 
 import re
 import json
+import time
 import logging
 log = logging.getLogger('scrapy.spider')
 
@@ -26,6 +27,8 @@ class BilibiliSpider(scrapy.Spider):
         self.clt = target
         self.sn = int(start)
         self.en = int(end)
+        log.info('Fetching proxy...')
+        time.sleep(2)
 
     def start_requests(self):
 
@@ -81,14 +84,12 @@ class BilibiliSpider(scrapy.Spider):
         data['article'] = raw['archive'].get('count') if 'archive' in raw else ''
         data['setting'] = { k: v for k, v in raw['setting'].iteritems() if v == 0 }
 
-        print data
-
         # atttentions
-        if data['attention'] > 0:
-            url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
-            request = scrapy.Request(url=url, callback=self.parse_user_attentions)
-            request.meta['mid'] = mid
-            yield request
+        url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+        request = scrapy.Request(url=url, callback=self.parse_user_attentions)
+        request.meta['mid'] = mid
+        request.meta['enable_proxy'] = True
+        yield request
 
         # favourite
         tab = raw.get('favourite')
@@ -96,11 +97,12 @@ class BilibiliSpider(scrapy.Spider):
             data['folder'] = [ { 'id':t['fid'], 'name':t['name'] } for t in tab['item'] ]
             for f in data['folder']:
                 fid = f['id']
-                url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
+                url = 'http://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
                 request = scrapy.Request(url=url, callback=self.parse_user_favorite)
                 request.meta['mid'] = mid
                 request.meta['fid'] = fid
                 request.meta['pn'] = 1
+                request.meta['enable_proxy'] = True
                 yield request
         elif raw['setting']['fav_video'] == 0:
             url = 'http://space.bilibili.com/ajax/fav/getboxlist?mid={}'.format(mid)
@@ -133,7 +135,7 @@ class BilibiliSpider(scrapy.Spider):
                 yield request
 
         # tag
-        tab = raw.get('tab')
+        tab = raw.get('tag')
         if tab:
             url = 'https://space.bilibili.com/ajax/tags/getSubList?mid={}'.format(mid)
             request = scrapy.Request(url=url, callback=self.parse_user_tag)
@@ -151,10 +153,15 @@ class BilibiliSpider(scrapy.Spider):
         yield user
 
     def parse_user_attentions(self, response):
+        mid = response.meta['mid']
         data = json.loads(response.body)['data']['card']
         regtime = datetime.fromtimestamp(data['regtime'])
-        mid = response.meta['mid']
-        user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime })
+        try:
+            birthday = datetime.strptime(data['birthday'], '%Y-%m-%d')
+        except:
+            birthday = None
+        user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime,
+                          'birthday': birthday, 'place': data['place'] })
         yield user
 
     def parse_user_folder(self, response):
@@ -167,11 +174,12 @@ class BilibiliSpider(scrapy.Spider):
         # crawl videos inside each folder
         for f in flds:
             fid = f['id']
-            url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
+            url = 'http://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}'.format(m=mid, f=fid)
             request = scrapy.Request(url=url, callback=self.parse_user_favorite)
             request.meta['mid'] = mid
             request.meta['fid'] = fid
             request.meta['pn'] = 1
+            request.meta['enable_proxy'] = True
             yield request
 
     def parse_user_favorite(self, response):
@@ -188,11 +196,12 @@ class BilibiliSpider(scrapy.Spider):
         total = data['total']
         if pn * ps < total:
             next_pn = pn + 1
-            url = 'https://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}&pn={p}'.format(m=mid, f=fid, p=next_pn)
+            url = 'http://api.bilibili.com/x/v2/fav/video?vmid={m}&fid={f}&pn={p}'.format(m=mid, f=fid, p=next_pn)
             request = scrapy.Request(url=url, callback=self.parse_user_favorite)
             request.meta['mid'] = mid
             request.meta['fid'] = fid
             request.meta['pn'] = next_pn
+            request.meta['enable_proxy'] = True
             yield request
 
     def parse_user_community(self, response):
@@ -243,10 +252,11 @@ class BilibiliSpider(scrapy.Spider):
 
     def parse_user_tag(self, response):
         data = json.loads(response.body)['data']
-        tag = [t['name'] for t in data['tags']]
-        mid = response.meta['mid']
-        user = UserItem({ 'mid': mid, 'tag': tag })
-        yield user
+        if 'tags' in data:
+            tag = [t['name'] for t in data['tags']]
+            mid = response.meta['mid']
+            user = UserItem({ 'mid': mid, 'tag': tag })
+            yield user
 
 
     #==================== VIDEO PART ====================#
@@ -276,18 +286,20 @@ class BilibiliSpider(scrapy.Spider):
         yield video
 
         # next request: video stat
-        stat_url = 'https://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
+        stat_url = 'http://api.bilibili.com/x/web-interface/archive/stat?aid={}'.format(aid)
         request = scrapy.Request(url=stat_url, callback=self.parse_video_stat)
         request.meta['aid'] = aid
+        request.meta['enable_proxy'] = True
         yield request
 
 
     def parse_video_stat(self, response):
         data = json.loads(response.body)['data']
-        data['aid'] = response.meta['aid']
-        video = VideoItem()
-        video.fill(data)
-        yield video
+        if 'aid' in data:
+            data['aid'] = response.meta['aid']
+            video = VideoItem()
+            video.fill(data)
+            yield video
 
     #==================== DANMAKU PART ====================#
 
