@@ -153,9 +153,9 @@ class BilibiliSpider(scrapy.Spider):
         yield user
 
     def parse_user_attentions(self, response):
-        mid = response.meta['mid']
         data = json.loads(response.body)['data']['card']
         regtime = datetime.fromtimestamp(data['regtime'])
+        mid = response.meta['mid']
         try:
             birthday = datetime.strptime(data['birthday'], '%Y-%m-%d')
         except:

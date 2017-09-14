@@ -17,13 +17,12 @@ import logging
 log = logging.getLogger('scrapy.middleware')
 
 from datetime import datetime, timedelta
-
-from user_agents import USER_AGENTS
+import crawler.settings as st
 
 class RandomUserAgentMiddleware(object):
 
     def process_request(self, request, spider):
-        request.headers["User-Agent"] = random.choice(USER_AGENTS)
+        request.headers["User-Agent"] = random.choice(st.USER_AGENTS)
 
 class RandomProxyMiddleware(object):
 
@@ -36,7 +35,7 @@ class RandomProxyMiddleware(object):
 
     def get_proxies(self):
         while True:
-            r = requests.get('http://183.131.144.70:5000/')
+            r = requests.get('http://183.131.144.70:5000/fast')
             data = json.loads(r.text)['data']
             self.proxy_list = ['http://{}'.format(ip) for ip in data]
             self.fetch_finished = True
