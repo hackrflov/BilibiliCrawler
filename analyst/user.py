@@ -10,6 +10,7 @@
 
 import sys
 
+import random
 from bili_util import BiliUtil
 
 class User(BiliUtil):
@@ -103,6 +104,81 @@ class User(BiliUtil):
             { '$limit' : 10 }
         ])
         self.show(docs)
+
+    def favorite_videos(self, mid=0):
+        if mid == 0:
+            mid = random.randint(0,10000)
+        docs = self.db[self.clt_name].aggregate([
+            { '$match' : { 'mid' : mid } },
+            { '$project' : { 'tag' : 1, 'mid' : 1, 'name' : 1, 'favorite' : 1 } },
+            { '$unwind' : '$favorite' },
+            { '$lookup' :
+                { 'from' : 'video',
+                  'localField' : 'favorite.id',
+                  'foreignField' : 'aid',
+                  'as' : 'favs'
+                }
+            },
+            { '$limit' : 2000 }
+        ])
+        self.show(docs)
+
+    def favorite_size(self):
+        docs = self.db.user.aggregate([
+            { '$match' : { 'favorite' : { '$exists' : True, '$not' : { '$size' : 0 } } } },
+            { '$project' : { 'size' : { '$size' : '$favorite' } } },
+            { '$group' : { '_id' : '$size', 'count' : { '$sum' : 1 } } },
+            { '$sort' : { '_id' : -1 } }
+        ])
+        self.show(docs)
+
+    """
+    method: comprehensively analyze user type
+    """
+    def user_type(self, mid=0):
+        if mid == 0:
+            mid = random.randint(10000000,10300000)
+        # Favorite videos toptype
+        print '====== User {} basic info ======'.format(mid)
+        self.show(self.db.user.find({'mid':mid}))
+
+        print '\n====== Favorite videos ======'
+        docs = self.db.user.aggregate([
+            { '$match' : { 'mid' : mid } },
+            { '$unwind' : '$favorite' },
+            { '$lookup' :
+                { 'from' : 'video',
+                  'localField' : 'favorite.id',
+                  'foreignField' : 'aid',
+                  'as' : 'video'
+                }
+            },
+            { '$unwind' : '$video' },
+            { '$match' : { 'video.typename' : { '$exists' : 1 } } },
+            { '$project' : { 'toptype' : '$video.toptype', 'typename' : '$video.typename' } },
+            { '$group' : { '_id' : { 'toptype' : '$toptype', 'typename' : '$typename' }, 'count' : { '$sum' : 1 } } },
+            { '$sort' : { 'count' : -1 } },
+        ])
+        self.show(docs)
+
+        print '\n====== Submit videos ======'
+        docs = self.db.user.aggregate([
+            { '$match' : { 'mid' : mid } },
+            { '$lookup' :
+                { 'from' : 'video',
+                  'localField' : 'mid',
+                  'foreignField' : 'mid',
+                  'as' : 'video'
+                }
+            },
+            { '$unwind' : '$video' },
+            { '$match' : { 'video.typename' : { '$exists' : 1 } } },
+            { '$project' : { 'toptype' : '$video.toptype', 'typename' : '$video.typename' } },
+            { '$group' : { '_id' : { 'toptype' : '$toptype', 'typename' : '$typename' }, 'count' : { '$sum' : 1 } } },
+            { '$sort' : { 'count' : -1 } },
+        ])
+        self.show(docs)
+
 
 if __name__ == '__main__':
     user = User()

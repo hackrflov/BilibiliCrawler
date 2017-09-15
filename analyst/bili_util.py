@@ -8,12 +8,16 @@
     Python Version: 2.7
 """
 
-
-from pymongo import MongoClient
-from datetime import datetime
+import re
+import types
 import random
 
-client = MongoClient('mongodb://crawler:hackrflov@127.0.0.1/bilibili')
+from datetime import datetime
+from pymongo import MongoClient
+import pdb
+import pprint
+
+client = MongoClient('mongodb://bili_crawler:bilibili@127.0.0.1/bilibili')
 db = client.bilibili
 
 class BiliUtil():
@@ -75,22 +79,9 @@ class BiliUtil():
     method: print every doc inside
     """
     def show(self, docs):
+        # Convert to list
+        docs = [doc for doc in docs]
         for doc in docs:
-            print '{'
-            sorted_items = sorted(doc.items(), key=lambda t: t[0])
-            for (key, value) in sorted_items:
-                print '    ', key, ':',
-                if type(value) == list:
-                    print '[',
-                    for v in value:
-                        print v, ',',
-                    print '],'
-                elif type(value) == int:
-                    dt = datetime.fromtimestamp(value)
-                    if dt.year >= 2000:
-                        print dt.strftime('%Y-%m-%d %H:%M'), ','
-                    else:
-                        print value, ','
-                else:
-                    print value, ','
-            print '}'
+            s = pprint.pformat(doc)
+            s = re.sub("u'|'", '', s)
+            print s.decode('unicode-escape')
