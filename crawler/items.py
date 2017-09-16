@@ -54,6 +54,7 @@ class UserItem(BilibiliItem):
     community = scrapy.Field()  # 兴趣圈  https://app.bilibili.com/x/v2/space/community?vmid={} -> data -> item -> id [20/page]
     bangumi = scrapy.Field()  # 订阅番剧  https://app.bilibili.com/x/v2/space/bangumi?vmid={} -> data -> item -> param [20/page]
     tag = scrapy.Field()  # 订阅标签  https://space.bilibili.com/ajax/tags/getSubList?mid={} -> data -> tags -> name [no-limit]
+    coin = scrapy.Field()  # 投币视频  https://space.bilibili.com/ajax/member/getCoinVideos?mis={} -> data -> list -> aid [no-limit]
     game = scrapy.Field() # 游戏
 
     # setting properties

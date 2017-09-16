@@ -142,6 +142,14 @@ class BilibiliSpider(scrapy.Spider):
             request.meta['mid'] = mid
             yield request
 
+        # coin
+        tab = raw.get('coin_archive')
+        if tab:
+            url = 'https://space.bilibili.com/ajax/member/getCoinVideos?mis={}'.format(mid)
+            request = scrapy.Request(url=url, callback=self.parse_user_coin)
+            request.meta['mid'] = mid
+            yield request
+
         # game
         tab = raw.get('game')
         if tab:
@@ -249,6 +257,14 @@ class BilibiliSpider(scrapy.Spider):
             request.meta['mid'] = mid
             request.meta['pn'] = next_pn
             yield request
+
+    def parse_user_coin(self, response):
+        data = json.loads(response.body)['data']
+        if 'list' in data:
+            videos = [t['aid'] for t in data['list']]
+            mid = response.meta['mid']
+            user = UserItem({ 'mid': mid, 'coin': videos })
+            yield user
 
     def parse_user_tag(self, response):
         data = json.loads(response.body)['data']

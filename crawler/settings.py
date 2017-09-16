@@ -27,7 +27,7 @@ COOKIES_ENABLED = False
 REDIRECT_ENABLED = True
 
 # Normal request timeout
-DOWNLOAD_TIMEOUT = 2.0
+DOWNLOAD_TIMEOUT = 15.0
 
 # Proxy request timeout
 PROXY_TIMEOUT = 0.2
