@@ -15,7 +15,7 @@ class BilibiliItem(scrapy.Item):
     def __init__(self, data={}, item_type='default'):
         super(BilibiliItem, self).__init__()
         self.fill(data)
-        self._type = item_type   # default: upsert ; append: add into array
+        self._type = item_type   # default: upsert | append: add into array
 
     def fill(self, data):
         for key, value in data.items():
@@ -23,10 +23,10 @@ class BilibiliItem(scrapy.Item):
                 self[key] = value
 
 """
-Data source1: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
+Data source1: https://app.bilibili.com/x/v2/space?vmid={MID}&build=1&ps=1
 Data source2: http://api.bilibili.com/cardrich?mid={MID}&type={TYPE}
 Data source3: http://m.bilibili.com/space/{MID}
-Data source4: https://app.bilibili.com/x/v2/space?vmid={MID}&build=1&ps=1
+Data source4: https://space.bilibili.com/ajax/member/GetInfo?mid={MID} - POST
 """
 class UserItem(BilibiliItem):
 
@@ -43,7 +43,8 @@ class UserItem(BilibiliItem):
     level = scrapy.Field()  # 等级
     nameplate = scrapy.Field()  # 勋章
     vip = scrapy.Field()  # VIP
-    article = scrapy.Field() # 投稿数
+    archive = scrapy.Field() # 投稿数
+    article = scrapy.Field() # 专栏数
 
     setting = scrapy.Field() # 隐私设置
     live = scrapy.Field() # 直播间
@@ -52,7 +53,7 @@ class UserItem(BilibiliItem):
     favorite = scrapy.Field() # 收藏视频  https://api.bilibili.com/x/v2/fav/video?vmid={}&fid={} -> data -> archives -> aid [30/page]
     attentions = scrapy.Field()  # 关注列表  http://api.bilibili.com/cardrich?mid={} -> data -> card -> attentions [no-limit]
     community = scrapy.Field()  # 兴趣圈  https://app.bilibili.com/x/v2/space/community?vmid={} -> data -> item -> id [20/page]
-    bangumi = scrapy.Field()  # 订阅番剧  https://app.bilibili.com/x/v2/space/bangumi?vmid={} -> data -> item -> param [20/page]
+    bangumi = scrapy.Field()  # 订阅番剧  https://space.bilibili.com/ajax/Bangumi/getList?mid={}&page={}-> data -> result -> season_id [12/page]
     tag = scrapy.Field()  # 订阅标签  https://space.bilibili.com/ajax/tags/getSubList?mid={} -> data -> tags -> name [no-limit]
     coin = scrapy.Field()  # 投币视频  https://space.bilibili.com/ajax/member/getCoinVideos?mis={} -> data -> list -> aid [no-limit]
     game = scrapy.Field() # 游戏
