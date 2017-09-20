@@ -77,56 +77,56 @@ class PatchSpider(scrapy.Spider):
 
         if doc is None or 'name' not in doc:
             log.debug('now fetch user total: {}'.format(mid))
-            reqs = self.parse_user_seed(response)
-            reqs.append(self.fetch_user_attentions(mid))
+            reqs = [r for r in self.parse_user_seed(response)]
         else:
-            raw = json.loads(response.body)['data']
-            if 'regtime' not in doc or 'birthday' not in doc:
-                log.debug('now fetch user attentions: {}'.format(mid))
-                reqs.append(self.fetch_user_attentions(mid))
+            raw = json.loads(response.body).get('data')
+            if raw:
+                if 'regtime' not in doc or 'birthday' not in doc:
+                    log.debug('now fetch user attentions: {}'.format(mid))
+                    reqs.append(self.fetch_user_attentions(mid))
 
-            BIAS = 5
+                BIAS = 5
 
-            # favourite
-            tab = raw.get('favourite')
-            if tab:
-                folder_size = [ t['cur_count'] for t in tab['item'] ]
-                correct_num = sum(folder_size)
-                if correct_num > 0:
-                    real_fav_list = doc.get('favorite')
-                    if real_fav_list == None or len(real_fav_list) < correct_num - BIAS:
-                        log.debug('now fetch user fav: {}'.format(mid))
-                        reqs.append(self.fetch_user_fav(mid))
+                # favourite
+                tab = raw.get('favourite')
+                if tab:
+                    folder_size = [ t['cur_count'] for t in tab['item'] ]
+                    correct_num = sum(folder_size)
+                    if correct_num > 0:
+                        real_fav_list = doc.get('favorite')
+                        if real_fav_list == None or len(real_fav_list) < correct_num - BIAS:
+                            log.debug('now fetch user fav: {}'.format(mid))
+                            reqs.append(self.fetch_user_fav(mid))
 
-            # community
-            tab = raw.get('community')
-            if tab:
-                correct_num = tab['count']
-                real_cmu_list = doc.get('community')
-                if real_cmu_list == None or len(real_cmu_list) < correct_num - BIAS:
-                    log.debug('now fetch user community: {}'.format(mid))
-                    reqs.append(self.fetch_user_community(mid))
+                # community
+                tab = raw.get('community')
+                if tab:
+                    correct_num = tab['count']
+                    real_cmu_list = doc.get('community')
+                    if real_cmu_list == None or len(real_cmu_list) < correct_num - BIAS:
+                        log.debug('now fetch user community: {}'.format(mid))
+                        reqs.append(self.fetch_user_community(mid))
 
-            # bangumi
-            tab = raw.get('season')
-            if tab:
-                correct_num = tab['count']
-                real_bgm_list = doc.get('bangumi')
-                if real_bgm_list == None or len(real_bgm_list) < correct_num - BIAS:
-                    log.debug('now fetch user bangumi: {}'.format(mid))
-                    reqs.append(self.fetch_user_bangumi(mid))
+                # bangumi
+                tab = raw.get('season')
+                if tab:
+                    correct_num = tab['count']
+                    real_bgm_list = doc.get('bangumi')
+                    if real_bgm_list == None or len(real_bgm_list) < correct_num - BIAS:
+                        log.debug('now fetch user bangumi: {}'.format(mid))
+                        reqs.append(self.fetch_user_bangumi(mid))
 
-            # tag
-            tab = raw.get('tag')
-            if tab and 'tag' not in doc:
-                log.debug('now fetch user tag: {}'.format(mid))
-                reqs.append(self.fetch_user_tag(mid))
+                # tag
+                tab = raw.get('tag')
+                if tab and 'tag' not in doc:
+                    log.debug('now fetch user tag: {}'.format(mid))
+                    reqs.append(self.fetch_user_tag(mid))
 
-            # coin
-            tab = raw.get('coin_archive')
-            if tab and 'coin' not in doc:
-                log.debug('now fetch user coin: {}'.format(mid))
-                reqs.append(self.fetch_user_coin(mid))
+                # coin
+                tab = raw.get('coin_archive')
+                if tab and 'coin' not in doc:
+                    log.debug('now fetch user coin: {}'.format(mid))
+                    reqs.append(self.fetch_user_coin(mid))
 
         # yield requests & items
         if reqs:
@@ -192,6 +192,8 @@ class PatchSpider(scrapy.Spider):
         data['archive'] = raw['archive'].get('count') if 'archive' in raw else ''
         data['setting'] = { k: v for k, v in raw['setting'].iteritems() if v == 0 }
 
+        yield self.fetch_user_attentions(mid)
+
         # favourite
         tab = raw.get('favourite')
         if tab:
@@ -245,16 +247,18 @@ class PatchSpider(scrapy.Spider):
         yield user
 
     def parse_user_attentions(self, response):
-        data = json.loads(response.body)['data']['card']
-        regtime = datetime.fromtimestamp(data['regtime'])
-        mid = response.meta['mid']
-        try:
-            birthday = datetime.strptime(data['birthday'], '%Y-%m-%d')
-        except:
-            birthday = None
-        user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime,
-                          'birthday': birthday, 'place': data['place'] })
-        yield user
+         data = json.loads(response.body).get('data')
+         if data:
+             data = data['card']
+             regtime = datetime.fromtimestamp(data['regtime'])
+             mid = response.meta['mid']
+             try:
+                 birthday = datetime.strptime(data['birthday'], '%Y-%m-%d')
+             except:
+                 birthday = None
+             user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime,
+                               'birthday': birthday, 'place': data['place'] })
+             yield user
 
     def parse_user_folder(self, response):
         data = json.loads(response.body)['data']['list']

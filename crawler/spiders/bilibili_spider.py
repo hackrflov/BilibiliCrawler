@@ -38,13 +38,6 @@ class BilibiliSpider(scrapy.Spider):
                 url = 'https://app.bilibili.com/x/v2/space?vmid={}&build=1&ps=1'.format(mid)
                 request = scrapy.Request(url=url, callback=self.parse_user_seed)
                 yield request
-                # atttentions
-                url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
-                request = scrapy.Request(url=url, callback=self.parse_user_attentions)
-                request.meta['mid'] = mid
-                request.meta['enable_proxy'] = True
-                yield request
-
 
         # Fetch for video
         if self.clt in ['video','']:
@@ -90,6 +83,13 @@ class BilibiliSpider(scrapy.Spider):
         data['live'] = raw['live'].get('roomid') if 'live' in raw else ''
         data['archive'] = raw['archive'].get('count') if 'archive' in raw else ''
         data['setting'] = { k: v for k, v in raw['setting'].iteritems() if v == 0 }
+
+        # atttentions
+        url = 'http://api.bilibili.com/cardrich?mid={}'.format(mid)
+        request = scrapy.Request(url=url, callback=self.parse_user_attentions)
+        request.meta['mid'] = mid
+        request.meta['enable_proxy'] = True
+        yield request
 
         # favourite
         tab = raw.get('favourite')
@@ -161,16 +161,18 @@ class BilibiliSpider(scrapy.Spider):
         yield user
 
     def parse_user_attentions(self, response):
-        data = json.loads(response.body)['data']['card']
-        regtime = datetime.fromtimestamp(data['regtime'])
-        mid = response.meta['mid']
-        try:
-            birthday = datetime.strptime(data['birthday'], '%Y-%m-%d')
-        except:
-            birthday = None
-        user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime,
-                          'birthday': birthday, 'place': data['place'] })
-        yield user
+         data = json.loads(response.body).get('data')
+         if data:
+             data = data['card']
+             regtime = datetime.fromtimestamp(data['regtime'])
+             mid = response.meta['mid']
+             try:
+                 birthday = datetime.strptime(data['birthday'], '%Y-%m-%d')
+             except:
+                 birthday = None
+             user = UserItem({ 'mid': mid, 'attentions': data['attentions'], 'regtime' : regtime,
+                               'birthday': birthday, 'place': data['place'] })
+             yield user
 
     def parse_user_folder(self, response):
         data = json.loads(response.body)['data']['list']
