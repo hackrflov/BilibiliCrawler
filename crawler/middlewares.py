@@ -62,11 +62,14 @@ class RandomProxyMiddleware(object):
         if response.status != 200:
             log.debug('in pro_res: status = {s}, {u}, {m}, {b}'.format(s=response.status, u=response.url, m=request.meta, b=response.body[:1000]))
             if 'proxy' in request.meta:
-                if request.meta.get('retry_times') == st.RETRY_TIMES - 1:  # try local connect at the last time
+                if 'banned' not in request.meta and request.meta.get('retry_times') == st.RETRY_TIMES - 1:  # try local connect at the last time
                     del request.meta['proxy']
                     del request.meta['download_timeout']
                 else:
                     request.meta['proxy'] = random.choice(self.proxy_list)
+            elif response.status == 403:
+                request.meta['proxy'] = random.choice(self.proxy_list)
+                request.meta['banned'] = True
         else:
             log.debug('in pro_res: status=200, proxy={p}, used {s}s'.format(p=request.meta.get('proxy'), s=request.meta['download_latency']))
         return response
